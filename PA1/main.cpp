@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
 auto start = std::chrono::steady_clock::now();
   simulator.read(input_file);
-  // simulator.run(); 
+  simulator.run();
   // simulator.get_results(); 
 auto end = std::chrono::steady_clock::now();
 
