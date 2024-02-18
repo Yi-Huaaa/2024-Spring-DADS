@@ -7,13 +7,18 @@
 
 
 int main(int argc, char *argv[]) {
-  std::string file_path(argv[1]);
-  std::ifstream input_file (file_path);
+  std::string input_file_path(argv[1]);
+  std::string output_file_path(argv[2]);
+  std::ifstream input_file(input_file_path);
+  std::ofstream output_file(output_file_path);
   
   // check open file
   using std::string_literals::operator""s;
   if (!input_file) {
-    throw std::runtime_error("cannot open circut file "s + file_path);
+    throw std::runtime_error("cannot open circut file "s + input_file_path);
+  }
+  if (!output_file) {
+    throw std::runtime_error("cannot open circut file "s + output_file_path);
   }
   
   FM::Simulator simulator;
@@ -22,7 +27,7 @@ int main(int argc, char *argv[]) {
 auto start = std::chrono::steady_clock::now();
   simulator.read(input_file);
   simulator.run();
-  // simulator.get_results(); 
+  simulator.output_results(output_file); 
 auto end = std::chrono::steady_clock::now();
 
   duration = end - start;

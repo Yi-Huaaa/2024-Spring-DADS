@@ -1,0 +1,5 @@
+Cutsize = 2
+G1 1
+c2 ;
+G2 4
+c1 c3 c4 c5 ;
