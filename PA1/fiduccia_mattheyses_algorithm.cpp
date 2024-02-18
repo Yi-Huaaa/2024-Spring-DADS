@@ -91,10 +91,10 @@ bool FM::Simulator::_check_balanced(size_t par_0_sz, size_t par_1_sz) {
 #ifdef debug_read_input_file
   std::cout << "balanced factors: " << _balanced_factor_0 << ", " << _balanced_factor_1 << "\n";
 #endif
-  if ((_balanced_factor_0 <= par_0_sz) && (par_1_sz <= _balanced_factor_1)) {
-    return true;
-  }
-  return false;
+  return (_balanced_factor_0 <= par_0_sz)
+    && (_balanced_factor_0 <= par_1_sz)
+    && (par_0_sz <= _balanced_factor_1)
+    && (par_1_sz <= _balanced_factor_1);
 }
 
 void FM::Simulator::_init_partitions() {
@@ -194,6 +194,7 @@ void FM::Simulator::_init_gains_and_gain_based_bucket() {
   _FS.resize(_cells.size());
   _TE.resize(_cells.size());
   _gain.resize(_cells.size());
+  _locked.resize(_cells.size());
   
   // init gains
   for (size_t i = 0; i < _cells.size(); i++) {
@@ -259,6 +260,10 @@ void FM::Simulator::_update_FS_TE_gain(size_t idx) {
     size_t net_idx = _cells[idx][i];
     for (size_t j = 0; j < _nets[net_idx].size(); j++) {
       size_t neighbor = _nets[net_idx][j];
+
+      // ignore locked neighbor as they cannot be moved anymore
+      if (_locked[neighbor]) continue;
+
       size_t n_par = _partition[neighbor], t_par = _partition[idx];
       neighbor_set.insert(neighbor);
 
@@ -273,7 +278,7 @@ void FM::Simulator::_update_FS_TE_gain(size_t idx) {
         }
       }
       
-      if (_partition_counts[t_par][net_idx] == 1) {
+      if (_partition_counts[t_par][net_idx] == 1 && _partition_counts[1 - t_par][net_idx] > 0) {
         // after the update, this net becomes uncut as every cell is in the same partition
         _TE[neighbor]++;
         if (neighbor == idx) {
@@ -281,7 +286,7 @@ void FM::Simulator::_update_FS_TE_gain(size_t idx) {
           _FS[idx]--;
           _cur_cut_size--;
         }
-      } else if (_partition_counts[1 - t_par][net_idx] == 0) {
+      } else if (_partition_counts[1 - t_par][net_idx] == 0 && _partition_counts[t_par][net_idx] > 1) {
         // now every cell is in the same partition, but won't be anymore after the update
         _TE[neighbor]--;
         if (neighbor == idx) {
@@ -295,10 +300,15 @@ void FM::Simulator::_update_FS_TE_gain(size_t idx) {
 
   // update all neighbor's position in gain-based bucket
   for (const auto& i: neighbor_set) {
+    // remove from the current bucket
     size_t pos = gain_to_gain_bucket_position(_theory_P_max, _gain[i]);
     size_t cell_idx = *_cell_iterators[i];
     _gain_based_bucket[pos].erase(_cell_iterators[i]);
 
+    // don't add the target call back to the bucket
+    if (i == idx) continue;
+
+    // insert to the new bucket
     _gain[i] = _FS[i] - _TE[i];
     pos = gain_to_gain_bucket_position(_theory_P_max, _gain[i]);
     _gain_based_bucket[pos].push_back(cell_idx);
@@ -340,11 +350,15 @@ void FM::Simulator::run() {
     // 4. The moved object is "locked"
     // 5. Gains of "touched" objects are recomputed 
     // 6. Gain lists are resorted
-    std::vector<size_t> locked; // 0: unlocked, 1: locked
+    // std::vector<size_t> locked; // 0: unlocked, 1: locked
     size_t locked_cells = 0;
-    locked.resize(_cells.size()); // init = 0
+    // locked.resize(_cells.size()); // init = 0
     while (locked_cells < _cells.size()) {
+      // input 0: error happens at 29483
+#ifdef debug_read_input_file
       if (locked_cells % 1000 == 0) std::cout << "debug: locked_cells = " << locked_cells << std::endl;
+      std::cout << "============================\n";
+#endif
       /**
        * step 3
        * select the cell with the largest gain
@@ -376,30 +390,29 @@ void FM::Simulator::run() {
         }
 
         bool balanced = _check_balanced(par_0_sz, par_1_sz);
-        if (balanced && !locked[selected_cell_idx]) { // it is balanced and haven't locked
+        // std::cout << "balanced: " << balanced << ", selected_cell_idx: " << selected_cell_idx << std::endl;
+        if (balanced) { // it is balanced and haven't locked
           selected = true;
         } else {
-          if (cell_index != _gain_based_bucket[gain_pos_pointer].end()) {
+          if (cell_index != std::prev(_gain_based_bucket[gain_pos_pointer].end())) {
             cell_index++;
           } else {
             // chose another line of bucket
-            for (size_t i = gain_pos_pointer + 1; i < _gain_based_bucket.size(); i++) {
+            size_t i;
+            for (i = gain_pos_pointer + 1; i < _gain_based_bucket.size(); i++) {
               if (_gain_based_bucket[i].size() != 0) {
                 cell_index = _gain_based_bucket[i].begin();
                 gain_pos_pointer = i;
                 break;
               }
             }
+            if (i == _gain_based_bucket.size()) {
+              std::cout << "NOT FOUND!\n";
+              exit(1);
+            }
           }
         }
       }
-      
-      /**
-       * step 4
-       * 4. The moved object is "locked"
-      */
-      locked_cells++;
-      locked[selected_cell_idx] = 1;
 
       /**
        * step 5, 6
@@ -407,6 +420,15 @@ void FM::Simulator::run() {
        * 6. Gain lists are resorted
       */
       _update_FS_TE_gain(selected_cell_idx);
+
+      /**
+       * step 4
+       * 4. The moved object is "locked"
+      */
+      locked_cells++;
+      _locked[selected_cell_idx] = true;
+      // locked[selected_cell_idx] = 1;
+
 #ifdef debug_read_input_file
       std::cout << "selected_cell_idx: " << selected_cell_idx << std::endl;
       print_FS_TE_gain();
@@ -438,6 +460,13 @@ void FM::Simulator::run() {
        * */
     }
 
+    // debug
+    size_t count = 0;
+    for (size_t i = 0; i < _nets.size(); i++) {
+      if (_partition_counts[0][i] > 0 && _partition_counts[1][i] > 0) count++;
+    }
+    std::cout << "debug: count = " << count << std::endl;
+
     // todo: update improvement
     improvement = _improvement();
     // record the partition results of this PASS
@@ -453,6 +482,11 @@ void FM::Simulator::_record_pass_results() {
 }
 
 void FM::Simulator::output_results(std::ofstream &output_file) {
+  // for (size_t i = 0; i < _nets.size(); i++) {
+  //   if (_nets[i].size() == 1) {
+  //     std::cout << "debug: only 1 cell in net: " << i << "\n";
+  //   }
+  // }
   output_file << "Cutsize = " << _min_cut_size << std::endl;
   std::vector<size_t> p0, p1;
   for (size_t i = 0; i < _best_partition.size(); i++) {
@@ -520,11 +554,11 @@ void FM::Simulator::print_gain_based_bucket() {
     printf("\n");
   }
   printf("_max_gain_pointer = %ld\n", _max_gain_pointer);
-  std::cout << "cell iterators: ";
-  for (size_t i = 0; i < _cells.size(); i++) {
-    std::cout << *_cell_iterators[i] << " ";
-  }
-  std::cout << std::endl;
+  // std::cout << "cell iterators: ";
+  // for (size_t i = 0; i < _cells.size(); i++) {
+  //   std::cout << *_cell_iterators[i] << " ";
+  // }
+  // std::cout << std::endl;
 }
 
 void FM::Simulator::print_FS_TE_gain() {

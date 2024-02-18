@@ -33,6 +33,7 @@ private:
   std::vector<size_t> _gain; // gain of each cell (gain = FS - TE)
   std::vector<std::list<size_t>> _gain_based_bucket;
   std::vector<std::list<size_t>::iterator> _cell_iterators;
+  std::vector<bool> _locked;
   
   // for best solution
   std::size_t _min_cut_size;

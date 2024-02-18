@@ -2,19 +2,23 @@
 
 set -e
 
-if [ $# -eq 0 ]; then
-    input_id="8" # Default input file number
-else
-    input_id="$1" # Input file number provided by the user
-fi
-
 g++ main.cpp fiduccia_mattheyses_algorithm.cpp -Wall -O3 -std=c++17 -o fm
 g++ main.cpp fiduccia_mattheyses_algorithm.cpp -Wall -O3 -std=c++17 -D debug_read_input_file -o fm_debug
 
-./fm input_pa1/input_${input_id}.dat output_${input_id}.dat
+if [ $# -eq 0 ]; then
+    for input_id in $(seq 0 8); do
+    echo "================================="
+    echo "running test data $input_id"
+    ./fm input_pa1/input_${input_id}.dat output_${input_id}.dat
+    ./checker/checker_linux input_pa1/input_${input_id}.dat output_${input_id}.dat
+    done;
+else
+    input_id="$1" # Input file number provided by the user
+    ./fm input_pa1/input_${input_id}.dat output_${input_id}.dat
 
-echo "================================="
-./checker/checker_linux input_pa1/input_${input_id}.dat output_${input_id}.dat
+    echo "================================="
+    ./checker/checker_linux input_pa1/input_${input_id}.dat output_${input_id}.dat
+fi
 
 # rm fm
 
