@@ -294,7 +294,7 @@ void FM::Simulator::_update_FS_TE_gain(size_t idx) {
   }
 
   // update all neighbor's position in gain-based bucket
-  for (size_t i = 0; i < neighbor_set.size(); i++) {
+  for (const auto& i: neighbor_set) {
     size_t pos = gain_to_gain_bucket_position(_theory_P_max, _gain[i]);
     size_t cell_idx = *_cell_iterators[i];
     _gain_based_bucket[pos].erase(_cell_iterators[i]);
