@@ -8,7 +8,6 @@
 // fsim namespace
 namespace FM {
 
-
 class Simulator {
 
 public:

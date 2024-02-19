@@ -31,7 +31,7 @@ auto start = std::chrono::steady_clock::now();
 auto end = std::chrono::steady_clock::now();
 
   duration = end - start;
-  std::cout << "duration: " << (duration.count())*1000 << " ms\n";
+  // std::cout << "duration: " << (duration.count())*1000 << " ms\n";
 
   return 0;
 }

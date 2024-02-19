@@ -77,13 +77,20 @@ void FM::Simulator::read(std::ifstream &input_file) {
   _balanced_factor_1 = (_cells.size()*(1+_r)/2);
 }
 
-void FM::Simulator::run() {  
+void FM::Simulator::run() {
+  size_t locked_cells_threshold = _cells.size();
+  size_t cells_threshold = 10000;
+  size_t elastic_factor = 2;
+  
+  // adjust locked_cells_threshold if cells size exceed threshold
+  if (_cells.size() > cells_threshold) {
+    locked_cells_threshold /= elastic_factor;
+  }
+
   size_t rounds = 5;
   for (size_t rnd = 0; rnd < rounds; rnd++) { // round of PASS
     // init all the necessary state  
     _init();
-    std::cerr << "debug!! _cells.size() = " << _cells.size() << "\n";
-    std::cerr << "debug!! rnd = " << rnd << ", start: _min_cut_size = " << _min_cut_size << "\n";
     // While there is unlocked object
     // 1. Each object is assigned a gain
     // 2. Objects are put into a sorted gain list
@@ -91,9 +98,8 @@ void FM::Simulator::run() {
     // 4. The moved object is "locked"
     // 5. Gains of "touched" objects are recomputed 
     // 6. Gain lists are resorted
-    // std::vector<size_t> locked; // 0: unlocked, 1: locked
     size_t locked_cells = 0;
-    while (locked_cells < _cells.size()) {
+    while (locked_cells < locked_cells_threshold) { // debug
       /**
        * step 3
        * select the cell with the largest gain
@@ -173,8 +179,6 @@ void FM::Simulator::run() {
       print_partitions();
 #endif
     }
-    std::cerr << "debug!! rnd = " << rnd << ", end: _min_cut_size = " << _min_cut_size << "\n";
-
   }
 }
 
@@ -232,7 +236,6 @@ void FM::Simulator::_init() {
 void FM::Simulator::_init_partitions() {
   // sets _partition, _partitoin_0_sz, _partitoin_1_sz, _partition_counts
   // _cur_cut_size, _min_cut_size
-  std::cerr << "debug!! _best_partition.size() = " << _best_partition.size() << "\n";
   if (_best_partition.size() == 0) {
     // do a 50/50 split
     _partition.resize(_cells.size());

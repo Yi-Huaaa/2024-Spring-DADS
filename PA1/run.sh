@@ -20,7 +20,7 @@ else
     ./checker/checker_linux input_pa1/input_${input_id}.dat output_${input_id}.dat
 fi
 
-# rm fm
+rm fm fm_debug
 
 # ychung79@twhuang-desktop-03:~/DADS/2024-Spring-DADS/PA1$ ll input_pa1/
 # total 34316
