@@ -5,10 +5,6 @@
 #include <list>
 #include <vector>
 
-// define for debugging
-// #define debug_read_input_file
-
-
 // fsim namespace
 namespace FM {
 
@@ -58,12 +54,9 @@ private:
   void _init_partitions();
   void _init_gains_and_gain_based_bucket();
   void _compute_gains (size_t idx, std::vector<size_t> cell);
-  bool _improvement();
   void _update_partitions(size_t idx);
   void _update_FS_TE_gain(size_t idx);
-  void _update_gain_based_bucket ();
   void _update_cut_size();
-  void _record_pass_results();
 
   // print functions for debug
   void print_input_file();

@@ -3,7 +3,7 @@
 set -e
 
 g++ main.cpp fiduccia_mattheyses_algorithm.cpp -Wall -O3 -std=c++17 -o fm
-g++ main.cpp fiduccia_mattheyses_algorithm.cpp -Wall -O3 -std=c++17 -D debug_read_input_file -o fm_debug
+g++ main.cpp fiduccia_mattheyses_algorithm.cpp -Wall -O3 -std=c++17 -D debug_on -o fm_debug
 
 if [ $# -eq 0 ]; then
     for input_id in $(seq 0 8); do
