@@ -75,14 +75,15 @@ void FM::Simulator::read(std::ifstream &input_file) {
   // update balanced_factors
   _balanced_factor_0 = (_cells.size()*(1-_r)/2);
   _balanced_factor_1 = (_cells.size()*(1+_r)/2);
-
-  // initialize Gain
-  _init();
 }
 
 void FM::Simulator::run() {  
-  size_t rounds = 1;
+  size_t rounds = 5;
   for (size_t rnd = 0; rnd < rounds; rnd++) { // round of PASS
+    // init all the necessary state  
+    _init();
+    std::cerr << "debug!! _cells.size() = " << _cells.size() << "\n";
+    std::cerr << "debug!! rnd = " << rnd << ", start: _min_cut_size = " << _min_cut_size << "\n";
     // While there is unlocked object
     // 1. Each object is assigned a gain
     // 2. Objects are put into a sorted gain list
@@ -172,6 +173,8 @@ void FM::Simulator::run() {
       print_partitions();
 #endif
     }
+    std::cerr << "debug!! rnd = " << rnd << ", end: _min_cut_size = " << _min_cut_size << "\n";
+
   }
 }
 
@@ -229,15 +232,28 @@ void FM::Simulator::_init() {
 void FM::Simulator::_init_partitions() {
   // sets _partition, _partitoin_0_sz, _partitoin_1_sz, _partition_counts
   // _cur_cut_size, _min_cut_size
-  _partition.resize(_cells.size());
-  _partitoin_0_sz = (_cells.size() >> 1);
-  _partitoin_1_sz = _cells.size() - _partitoin_0_sz;
-  
-  for (size_t i = 0; i < _partitoin_0_sz; i++) {
-    _partition[i] = 0;
-  }
-  for (size_t i = _partitoin_0_sz; i < _cells.size(); i++) {
-    _partition[i] = 1;
+  std::cerr << "debug!! _best_partition.size() = " << _best_partition.size() << "\n";
+  if (_best_partition.size() == 0) {
+    // do a 50/50 split
+    _partition.resize(_cells.size());
+    _partitoin_0_sz = (_cells.size() >> 1);
+    _partitoin_1_sz = _cells.size() - _partitoin_0_sz;
+    for (size_t i = 0; i < _partitoin_0_sz; i++) {
+      _partition[i] = 0;
+    }
+    for (size_t i = _partitoin_0_sz; i < _cells.size(); i++) {
+      _partition[i] = 1;
+    }
+  } else {
+    _partition = _best_partition;
+    _partitoin_0_sz = _partitoin_1_sz = 0;
+    for (size_t i = 0; i < _partition.size(); i++) {
+      if (_partition[i] == 0) {
+        _partitoin_0_sz++;
+      } else {
+        _partitoin_1_sz++;
+      }
+    }
   }
 
   // check the balanced
@@ -246,6 +262,7 @@ void FM::Simulator::_init_partitions() {
     exit(1);
   }
  
+  _partition_counts.clear();
   _partition_counts.resize(2);
   _partition_counts[0].resize(_nets.size());
   _partition_counts[1].resize(_nets.size());
@@ -274,6 +291,7 @@ void FM::Simulator::_init_gains_and_gain_based_bucket() {
   _FS.resize(_cells.size());
   _TE.resize(_cells.size());
   _gain.resize(_cells.size());
+  _locked.clear();
   _locked.resize(_cells.size());
   
   // init gains
