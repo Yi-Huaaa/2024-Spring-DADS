@@ -1,0 +1,62 @@
+=================================
+running test data 0
+duration: 123919 ms
+[Check] Cut size = 4873 matched!
+[Check] Balance passed:: 60300(min) < 60301(G1), 90449(G2) < 90450(max) 
+=================================
+Congratulations! Legal Solution!!
+=================================
+
+=================================
+running test data 1
+duration: 10.4528 ms
+[Check] Cut size = 1257 matched!
+[Check] Balance passed:: 1485(min) < 1486(G1), 1514(G2) < 1515(max) 
+=================================
+Congratulations! Legal Solution!!
+=================================
+
+=================================
+running test data 2
+duration: 22.5366 ms
+[Check] Cut size = 2243 matched!
+[Check] Balance passed:: 3430(min) < 3568(G1), 3432(G2) < 3570(max) 
+=================================
+Congratulations! Legal Solution!!
+=================================
+
+=================================
+running test data 3
+duration: 522.675 ms
+[Check] Cut size = 28472 matched!
+[Check] Balance passed:: 29999.7(min) < 30002(G1), 36664(G2) < 36666.3(max) 
+=================================
+Congratulations! Legal Solution!!
+=================================
+
+=================================
+running test data 4
+duration: 1118.42 ms
+[Check] Cut size = 46298 matched!
+[Check] Balance passed:: 74621.2(min) < 76126(G1), 74624(G2) < 76128.8(max) 
+=================================
+Congratulations! Legal Solution!!
+=================================
+
+=================================
+running test data 5
+duration: 5103.88 ms
+[Check] Cut size = 147292 matched!
+[Check] Balance passed:: 189332(min) < 193156(G1), 189333(G2) < 193157(max) 
+=================================
+Congratulations! Legal Solution!!
+=================================
+
+=================================
+running test data 6
+duration: 0.041938 ms
+[Check] Cut size = 1 matched!
+[Check] Balance passed:: 3e-08(min) < 1(G1), 5(G2) < 6(max) 
+=================================
+Congratulations! Legal Solution!!
+=================================
