@@ -9,6 +9,7 @@
 
 #define gain_to_gain_bucket_position(P_max, val) (P_max-val)
 #define gain_bucket_position_to_gain(P_max, pos) (P_max-pos)
+#define FM_SIZE_T_MAX 4294967295
 
 // todo: print out the results need to be careful of the index (both cells and nets)
 
@@ -16,7 +17,8 @@
 void FM::Simulator::read(std::ifstream &input_file) {
   // this function sets the following constant variables:
   // _r, _nets, _cells, _balanced_factor_0, _balanced_factor_1
-  size_t max_num_cells = 0; // max number of cells, local var is enough
+  _max_num_cells = 0; // max number of cells, local var is enough
+  _which_based = FM_SIZE_T_MAX;  // size_t max
 
   // start read file
   std::string line;
@@ -44,23 +46,40 @@ void FM::Simulator::read(std::ifstream &input_file) {
       }      
 
       std::string substring = str.substr(1);
-      size_t cellNumber = std::stoul(substring)-1; // note: here minus 1 changed the index from 1-based to 0-based
+      // size_t cellNumber = std::stoul(substring)-1; // note: here minus 1 changed the index from 1-based to 0-based
+      size_t cellNumber = std::stoul(substring); // note: here minus 1 changed the index from 1-based to 0-based
+      
 
       _nets[_nets.size()-1].push_back(cellNumber);
       // update max number of cells
-      max_num_cells = (cellNumber > max_num_cells) ? (cellNumber) : (max_num_cells); 
+      _max_num_cells = (cellNumber > _max_num_cells) ? (cellNumber) : (_max_num_cells); 
+      _which_based = (_which_based > cellNumber) ? (cellNumber) : (_which_based);
     }
   }
-  // update max_num_cells due to the based changed
-  max_num_cells++; 
+  
+  // deal with problem of 1-based and 0-based
+  // if the problem is 1-based, changed to 0-based
+  if (_which_based == 1) { // means is 1-based
+    for (size_t i = 0; i < _nets.size(); i++) {
+      for (size_t j = 0; j < _nets[i].size(); j++) {
+        _nets[i][j] = _nets[i][j] - 1;
+      }
+    }
+  } else { // means 0-based
+    // update _max_num_cells due to the based changed
+    _max_num_cells++; 
+  }
+  
 
   // construct _cells
-  _cells.resize(max_num_cells);
+  _cells.resize(_max_num_cells);
+  _real_data.resize(_max_num_cells, false);
   for (size_t i = 0; i < _nets.size(); i++) {
     for (size_t j = 0; j < _nets[i].size(); j++) {
-      size_t cell_idx = _nets[i][j];
-      size_t net_idx = i;
+      const size_t cell_idx = _nets[i][j];
+      const size_t net_idx = i;
       _cells[cell_idx].push_back(net_idx);
+      _real_data[cell_idx] = true;
     }
   }
 
@@ -68,7 +87,7 @@ void FM::Simulator::read(std::ifstream &input_file) {
   std::cerr << "read\n";
   std::cerr.precision(20);
   std::cerr << "_r =" << _r << "\n";
-  std::cerr << "max_num_cells = "<< max_num_cells << "\n\n";
+  std::cerr << "_max_num_cells = "<< _max_num_cells << "\n\n";
   print_input_file();
 #endif
 
@@ -79,15 +98,15 @@ void FM::Simulator::read(std::ifstream &input_file) {
 
 void FM::Simulator::run() {
   size_t locked_cells_threshold = _cells.size();
-  size_t cells_threshold = 10000;
-  size_t elastic_factor = 2;
+  const size_t cells_threshold = 10000;
+  const size_t elastic_factor = 1;
   
   // adjust locked_cells_threshold if cells size exceed threshold
   if (_cells.size() > cells_threshold) {
     locked_cells_threshold /= elastic_factor;
   }
 
-  size_t rounds = 5;
+  const size_t rounds = 5;
   for (size_t rnd = 0; rnd < rounds; rnd++) { // round of PASS
     // init all the necessary state  
     _init();
@@ -183,30 +202,56 @@ void FM::Simulator::run() {
 }
 
 void FM::Simulator::output_results(std::ofstream &output_file) {
-  output_file << "Cutsize = " << _min_cut_size << std::endl;
-  std::vector<size_t> p0, p1;
-  for (size_t i = 0; i < _best_partition.size(); i++) {
-    if (_best_partition[i] == 0) {
-      p0.push_back(i);
-    } else {
-      p1.push_back(i);
+  // printf("!_which_based = %ld\n", _which_based);
+
+  if (_which_based == 1) { // means is 1-based
+    output_file << "Cutsize = " << _min_cut_size << std::endl;
+    std::vector<size_t> p0, p1;
+    for (size_t i = 0; i < _best_partition.size(); i++) {
+      if (_best_partition[i] == 0) {
+        p0.push_back(i);
+      } else {
+        p1.push_back(i);
+      }
     }
+    output_file << "G1 " << p0.size() << std::endl;
+    for (size_t i = 0; i < p0.size(); i++) {
+      output_file << "c" << p0[i] + 1 << " ";
+    }
+    output_file << ";" << std::endl;
+    output_file << "G2 " << p1.size() << std::endl;
+    for (size_t i = 0; i < p1.size(); i++) {
+      output_file << "c" << p1[i] + 1 << " ";
+    }
+    output_file << ";" << std::endl;
+  } else { // means 0-based
+    output_file << "Cutsize = " << _min_cut_size << std::endl;
+    std::vector<size_t> p0, p1;
+    for (size_t i = 0; i < _best_partition.size(); i++) {
+      if (_best_partition[i] == 0) {
+        if (_real_data[i])
+          p0.push_back(i);
+      } else {
+        if (_real_data[i])
+          p1.push_back(i);
+      }
+    }
+    output_file << "G1 " << p0.size() << std::endl;
+    for (size_t i = 0; i < p0.size(); i++) {
+      output_file << "c" << p0[i] << " ";
+    }
+    output_file << ";" << std::endl;
+    output_file << "G2 " << p1.size() << std::endl;
+    for (size_t i = 0; i < p1.size(); i++) {
+      output_file << "c" << p1[i] << " ";
+    }
+    output_file << ";" << std::endl;
   }
-  output_file << "G1 " << p0.size() << std::endl;
-  for (size_t i = 0; i < p0.size(); i++) {
-    output_file << "c" << p0[i] + 1 << " ";
-  }
-  output_file << ";" << std::endl;
-  output_file << "G2 " << p1.size() << std::endl;
-  for (size_t i = 0; i < p1.size(); i++) {
-    output_file << "c" << p1[i] + 1 << " ";
-  }
-  output_file << ";" << std::endl;
 }
 
 // private functions
 // helper functions
-bool FM::Simulator::_check_balanced(size_t par_0_sz, size_t par_1_sz) {
+bool FM::Simulator::_check_balanced(const size_t par_0_sz, const size_t par_1_sz) {
   /**
    * size_CG*: n: total cell number
    * rule 1: (n*(1-_r)/2 <= size_G1)
@@ -325,7 +370,7 @@ void FM::Simulator::_init_gains_and_gain_based_bucket() {
   }
 }
 
-void FM::Simulator::_compute_gains(size_t idx, std::vector<size_t> cell) {
+void FM::Simulator::_compute_gains(const size_t idx, std::vector<size_t> &cell) {
   // init gain, gain = FS(s)-TE(s)
   // where the “moving force“ FS(c) is the number of nets connected to c 
   // but not connected to any other cells within c’s partition, 
@@ -335,10 +380,10 @@ void FM::Simulator::_compute_gains(size_t idx, std::vector<size_t> cell) {
   bool which_par = _partition[idx];
   // compute FS  
   for (size_t i = 0; i < cell.size(); i++) {
-    size_t which_net = cell[i];
+    const size_t which_net = cell[i];
     bool is_FS = true;
     for (size_t j = 0; j < _nets[which_net].size(); j++) { // j: cell index connected by this which_net
-      size_t which_cell = _nets[which_net][j];
+      const size_t which_cell = _nets[which_net][j];
       bool j_cell_par = _partition[which_cell];
       if ((j_cell_par == which_par) && (which_cell != idx)) { // if check to myself -> skip
         is_FS = false;
@@ -352,10 +397,10 @@ void FM::Simulator::_compute_gains(size_t idx, std::vector<size_t> cell) {
 
   // compute TE
   for (size_t i = 0; i < cell.size(); i++) {
-    size_t which_net = cell[i];
+    const size_t which_net = cell[i];
     bool is_TE = true;
     for (size_t j = 0; j < _nets[which_net].size(); j++) { // j: cell index connected by this which_net
-      size_t which_cell = _nets[which_net][j];
+      const size_t which_cell = _nets[which_net][j];
       bool j_cell_par = _partition[which_cell];
       if ((j_cell_par != which_par)) { // the nets connected to the cells in different partitions
         is_TE = false;
@@ -373,7 +418,7 @@ void FM::Simulator::_compute_gains(size_t idx, std::vector<size_t> cell) {
 }
 
 // update functions
-void FM::Simulator::_update_partitions(size_t idx) {
+void FM::Simulator::_update_partitions(const size_t idx) {
   // update _partitions
   for (size_t i = 0; i < _cells[idx].size(); i++) {
     size_t net_idx = _cells[idx][i];
@@ -383,19 +428,19 @@ void FM::Simulator::_update_partitions(size_t idx) {
   _partition[idx] = 1 - _partition[idx];
 }
 
-void FM::Simulator::_update_FS_TE_gain(size_t idx) {
+void FM::Simulator::_update_FS_TE_gain(const size_t idx) {
   std::unordered_set<size_t> neighbor_set;
 
   // update all neighbor's FS and TE
   for (size_t i = 0; i < _cells[idx].size(); i++) {
-    size_t net_idx = _cells[idx][i];
+    const size_t net_idx = _cells[idx][i];
     for (size_t j = 0; j < _nets[net_idx].size(); j++) {
-      size_t neighbor = _nets[net_idx][j];
+      const size_t neighbor = _nets[net_idx][j];
 
       // ignore locked neighbor as they cannot be moved anymore
       if (_locked[neighbor]) continue;
 
-      size_t n_par = _partition[neighbor], t_par = _partition[idx];
+      const size_t n_par = _partition[neighbor], t_par = _partition[idx];
       neighbor_set.insert(neighbor);
 
       if (neighbor != idx) {

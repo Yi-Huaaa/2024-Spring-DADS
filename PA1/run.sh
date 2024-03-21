@@ -5,22 +5,32 @@ set -e
 g++ main.cpp fiduccia_mattheyses_algorithm.cpp -Wall -O3 -std=c++17 -o fm
 g++ main.cpp fiduccia_mattheyses_algorithm.cpp -Wall -O3 -std=c++17 -D debug_on -o fm_debug
 
+input_files=("aes_core.dat" "tv80.dat" "vga_lcd.dat" "0.dat" "1.dat" "2.dat" "3.dat" "4.dat" "5.dat" "6.dat" "7.dat" "8.dat")
+
+input_files=("aes_core.dat" "tv80.dat" "vga_lcd.dat" "0.dat" "1.dat" "2.dat" "3.dat" "4.dat" "5.dat" "6.dat")
+# input_files=("aes_core.dat" "tv80.dat" "vga_lcd.dat")
+
 if [ $# -eq 0 ]; then
-    for input_id in $(seq 0 8); do
-    echo "================================="
-    echo "running test data $input_id"
-    ./fm input_pa1/input_${input_id}.dat output_${input_id}.dat
-    ./checker/checker_linux input_pa1/input_${input_id}.dat output_${input_id}.dat
-    done;
+    for input_file in "${input_files[@]}"; do
+        echo "================================="
+        echo "running test data input_${input_file}"
+        /usr/bin/time -f "%e\n%M"  ./fm "input_pa1/input_${input_file}" "output_${input_file}"
+        ./checker/checker_linux "input_pa1/input_${input_file}" "output_${input_file}"
+    done
 else
     input_id="$1" # Input file number provided by the user
-    ./fm input_pa1/input_${input_id}.dat output_${input_id}.dat
-
+    input_file="input_${input_id}.dat"
+    if [[ ! " ${input_files[@]} " =~ " ${input_file} " ]]; then
+        echo "Invalid input file number provided."
+        exit 1
+    fi
+    ./fm "input_pa1/input_${input_id}" "output_${input_file}"
     echo "================================="
-    ./checker/checker_linux input_pa1/input_${input_id}.dat output_${input_id}.dat
+    ./checker/checker_linux "input_pa1/input_${input_id}" "output_${input_file}"
 fi
 
 rm fm fm_debug
+
 
 # ychung79@twhuang-desktop-03:~/DADS/2024-Spring-DADS/PA1$ ll input_pa1/
 # total 34316

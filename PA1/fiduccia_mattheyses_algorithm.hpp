@@ -48,13 +48,13 @@ private:
   size_t _max_gain_pointer; // point on the real max of gain
 
   // functions 
-  bool _check_balanced(size_t par_0_sz, size_t par_1_sz);
+  bool _check_balanced(const size_t par_0_sz, const size_t par_1_sz);
   void _init();
   void _init_partitions();
   void _init_gains_and_gain_based_bucket();
-  void _compute_gains (size_t idx, std::vector<size_t> cell);
-  void _update_partitions(size_t idx);
-  void _update_FS_TE_gain(size_t idx);
+  void _compute_gains (const size_t idx, std::vector<size_t> &cell);
+  void _update_partitions(const size_t idx);
+  void _update_FS_TE_gain(const size_t idx);
   void _update_cut_size();
 
   // print functions for debug
@@ -62,6 +62,12 @@ private:
   void print_partitions();
   void print_gain_based_bucket();
   void print_FS_TE_gain();
+
+  // help to deal with 1-based and 0-based
+  size_t _which_based;
+  void _prune_fake_data();
+  size_t _max_num_cells;
+  std::vector<bool> _real_data;
 };
 
   
