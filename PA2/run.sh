@@ -2,26 +2,30 @@
 
 set -e
 
-g++ main.cpp fixed_outline_floorplanning.cpp -Wall -O3 -std=c++17 -o fofp
-g++ main.cpp fixed_outline_floorplanning.cpp -Wall -O3 -std=c++17 -D debug_on -o fofp_debug
+# clear && g++ main.cpp fixed_outline_floorplanning.cpp  -Wall -O3 -std=c++17 -o fp && ./fp input_pa2/1 input_pa2/1.nets output1.txt
 
-input_array=("1" "2" "3" "ami33" "ami49" "apte" "hp" "xerox" )
+g++ main.cpp fixed_outline_floorplanning.cpp -Wall -O3 -std=c++17 -o fp
+
+alpha="0.5"
+input_files_1=("1"  "2"  "3"  "ami33"  "ami49"  "apte"  "hp"  "xerox")
 
 if [ $# -eq 0 ]; then
-    for file in "${input_array[@]}"; do
+    for input_file in "${input_files_1[@]}"; do
         echo "================================="
-        echo "running test data: ${file}"            
-        ./fofp input_pa2/${file}.block input_pa2/${file}.nets output_${file}.rpt
-        ./checker/checker.py ${file} output_${file}.rpt
-    echo ""
-    done;
+        echo "running test data" "input_pa2/${input_file}.block" "input_pa2/${input_file}.nets"
+        ./fp $alpha "input_pa2/${input_file}.block" "input_pa2/${input_file}.nets" "output_${input_file}"
+        # ./checker/checker_linux "input_pa1/input_${input_file}" "output_${input_file}"
+    done
 else
     input_id="$1" # Input file number provided by the user
-    ./fofp input_pa2/${input_id}.block input_pa2/${input_id}.nets output_${input_id}.rpt
-
+    input_file="${input_id}"
+    if [[ ! " ${input_files_1[@]} " =~ " ${input_file} " ]]; then
+        echo "Invalid input file number provided."
+        exit 1
+    fi
+    ./fp $alpha "input_pa2/${input_file}.block" "input_pa2/${input_file}.nets" "output_${input_file}"
+    # ./checker/checker_linux "input_pa1/input_${input_id}" "output_${input_file}"
     echo "================================="
-
-    ./checker/checker.py ${input_id} output_${input_id}.rpt
 fi
 
-rm fofp fofp_debug
+rm fp
