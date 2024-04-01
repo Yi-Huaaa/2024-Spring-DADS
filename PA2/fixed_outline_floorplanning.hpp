@@ -28,6 +28,7 @@ private:
   void _SA();
   void _movement();
   void _PE_swap(size_t idx1, size_t idx2);
+  void _PE_complement_chain(size_t idx);
   bool _PE_validation(); // check whether the PE is valid
   void _change_PE_back();
   void _exchange_2_operands();

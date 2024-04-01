@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <random>
 #include <cstddef>
+#include <stack>
 
 #include "./fixed_outline_floorplanning.hpp"
 
@@ -100,6 +101,7 @@ void FP::Simulator::_init(double alpha) {
     if ((i+1) < _num_blocks)
       PE.push_back(i+1);
     PE.push_back(vertical);
+    vertical = -3 - vertical; // switch between V and H
     push_back_vectrical++;
   }
 
@@ -111,6 +113,7 @@ void FP::Simulator::_init(double alpha) {
   printf("post: push_back_vectrical = %ld\n", push_back_vectrical);
   for (size_t i = 0; i < push_back_vectrical; i++) {
     PE.push_back(vertical);
+    vertical = -3 - vertical; // switch between V and H
   }
 
 #ifdef FP_INIT_CEHCK
@@ -197,6 +200,13 @@ void FP::Simulator::_PE_swap(size_t idx1, size_t idx2) {
   PE[idx2] = tmp;
 }
 
+void FP::Simulator::_PE_complement_chain(size_t idx) {
+  for (size_t i = idx; i < PE.size(); i++) {
+    if (PE[i] >= 0) break;
+    PE[i] = -3 - PE[i];
+  }
+}
+
 void FP::Simulator::_movement() {
   /**
    * two different movements
@@ -205,56 +215,160 @@ void FP::Simulator::_movement() {
   */
   // TODO: change this to follow the lecture slides
   // TODO: optimize this
-  while (true) {
+  // while (true) {
+  //   _chosen_movement = random(0, 2);
+  //   switch (_chosen_movement) {
+  //     case 0: {
+  //       // switch any two numbers
+  //       // do {
+  //       //   pick_op_0 = random(0, PE.size() - 1);
+  //       // } while (PE[pick_op_0] < 0);
+  //       // do {
+  //       //   pick_op_1 = random(0, PE.size() - 1);
+  //       // } while (PE[pick_op_1] < 0 || pick_op_0 == pick_op_1);
+  //       // _PE_swap(pick_op_0, pick_op_1);
+
+  //       // swap adjacent numbers
+  //       do {
+  //         pick_op_0 = random(0, PE.size() - 2);
+  //         pick_op_1 = pick_op_0 + 1;
+  //       } while (PE[pick_op_0] < 0 || PE[pick_op_1] < 0);
+  //       // pick_op_0 and pick_op_1 should be numbers
+  //       _PE_swap(pick_op_0, pick_op_1);
+  //       break;
+  //     }
+  //     case 1: {
+  //       // switch H <-> V
+  //       // do {
+  //       //   pick_op_0 = random(0, PE.size() - 1); 
+  //       // } while (PE[pick_op_0] >= 0);
+  //       // _exchange_1_operator();
+  //       do {
+  //         pick_op_0 = random(1, PE.size() - 1);
+  //       } while (PE[pick_op_0] >= 0 || PE[pick_op_0 - 1] < 0);
+  //       // pick_op_0 is H/V and pick_op_0 - 1 is a number
+  //       _PE_complement_chain(pick_op_0);
+  //       break;
+  //     }
+  //     case 2: {
+  //       // swap 2 adjacent operand and operator and check if it's valid
+  //       do {
+  //         pick_op_0 = random(0, PE.size() - 2);
+  //         pick_op_1 = pick_op_0 + 1;
+  //       } while ((PE[pick_op_0] >= 0 && PE[pick_op_1] >= 0) || PE[pick_op_0] == PE[pick_op_1]);
+  //       _PE_swap(pick_op_0, pick_op_1);
+  //       break;
+  //     }
+  //     default: {
+  //       // programming error
+  //       exit(1);
+  //     }
+  //   }
+
+  //   // validate PE
+  //   if (_chosen_movement == 2 && !_PE_validation()) {
+  //     // std::cout << "M3 is not valid" << std::endl;
+  //     _PE_swap(pick_op_0, pick_op_1);
+  //     continue;
+  //   }
+  //   break;
+  // }
+  // // std::cout << "DEBUGGG: " << _chosen_movement << " " << pick_op_0 << " " << pick_op_1 << std::endl;
+
+
+
+  // bi
+
+  bool valid_movement = false;
+  while(!valid_movement) {
     _chosen_movement = random(0, 2);
-    switch (_chosen_movement) {
-      case 0: {
-        // switch any two numbers
-        do {
-          pick_op_0 = random(0, PE.size() - 1);
-        } while (PE[pick_op_0] < 0);
-        do {
-          pick_op_1 = random(0, PE.size() - 1);
-        } while (PE[pick_op_1] < 0 || pick_op_0 == pick_op_1);
-
-        // printf("_movement(): _num_blocks = %ld, pick_op_0 = %d, pick_op_1 = %d\n", _num_blocks, pick_op_0, pick_op_1);
+    // printf("_chosen_movement = %zu\n", _chosen_movement);
+    if (_chosen_movement == 0) { // movement_0
+      bool stop = false;
+      size_t faild_find_time = 0;
+      while (!stop && faild_find_time < 10) {
+        pick_op_0 = random(0, PE.size() - 2);
+        if (PE[pick_op_0] >= 0) { // pick a number
+          pick_op_1 = pick_op_0 + 1;          
+          while (PE[pick_op_1] < 0 && (size_t(pick_op_1) < (PE.size()))) { // find the adjacent number
+            pick_op_1++;
+          }
+          if ((PE[pick_op_1] >= 0) && (size_t(pick_op_1) < PE.size())) {
+            stop = true;
+            valid_movement = true; // find a valid movement_0
+          }
+        }
+        faild_find_time++;
+      }
+      if (valid_movement)
         _PE_swap(pick_op_0, pick_op_1);
-        break;
+    } else if (_chosen_movement == 1) { // movement_1
+      bool stop = false;
+      while (!stop) {
+        pick_op_0 = random(0, PE.size() - 2);
+        if ((PE[pick_op_0] < 0)) {
+          _PE_complement_chain(pick_op_0);
+          stop = true;
+          valid_movement = true; // find a valid movement_1 
+        }
       }
-      case 1: {
-        // switch H <-> V
-        do {
-          pick_op_0 = random(0, PE.size() - 1); 
-        } while (PE[pick_op_0] >= 0);
-
-        // printf("_movement(): _num_operators = %ld, pick_op_0 = %d\n", _num_blocks-1, pick_op_0);
-        _exchange_1_operator();
-        break;
+    } else { // movement_2
+      bool stop = false;
+      while (!stop) {
+        pick_op_0 = random(0, PE.size() - 2);
+        pick_op_1 = pick_op_0 + 1;
+        if ((PE[pick_op_0] < 0 && PE[pick_op_1] >= 0) || (PE[pick_op_0] >= 0 && PE[pick_op_1] < 0)) {
+          stop = true;
+          _PE_swap(pick_op_0, pick_op_1);
+          valid_movement = _PE_validation();
+        }
       }
-      case 2: {
-        // swap 2 adjacent operand and operator and check if it's valid
-        do {
-          pick_op_0 = random(0, PE.size() - 2);
-          pick_op_1 = pick_op_0 + 1;
-        } while ((PE[pick_op_0] >= 0 && PE[pick_op_1] >= 0) || PE[pick_op_0] == PE[pick_op_1]);
+      if (!valid_movement) {
         _PE_swap(pick_op_0, pick_op_1);
-        break;
-      }
-      default: {
-        // programming error
-        exit(1);
-      }
+      }   
     }
-
-    // validate PE
-    if (_chosen_movement == 2 && !_PE_validation()) {
-      std::cout << "M3 is not valid" << std::endl;
-      _PE_swap(pick_op_0, pick_op_0 + 1);
-      continue;
-    }
-    break;
   }
-  std::cout << "DEBUGGG: " << _chosen_movement << " " << pick_op_0 << " " << pick_op_1 << std::endl;
+  // ------------- debug message ------------- 
+  // if (_chosen_movement == 0) {
+  //   printf("DEBUGGG: Pick valid_moevement_%zu, pick_op_0 = %d (%d), pick_op_1 = %d (%d)\n", _chosen_movement, pick_op_0, PE[pick_op_0], pick_op_1, PE[pick_op_1]);
+  // } else if (_chosen_movement == 1) {
+  //   std::string a, b;
+  //   if (PE[pick_op_0] == -1) {
+  //     a = 'V';
+  //   } else {
+  //     a = 'H';
+  //   }
+  //   if (PE[pick_op_1] == -1) {
+  //     b = 'V';
+  //   } else {
+  //     b = 'H';
+  //   }
+  //   printf("DEBUGGG: Pick valid_moevement_%zu, pick_op_0 = %d (%s), pick_op_1 = %d (%s)\n", _chosen_movement, pick_op_0, a.c_str(), pick_op_1, b.c_str());
+  // } else { // _chosen_movement == 2
+  //   std::string a, b;
+  //   if (PE[pick_op_0] < 0) {
+  //     if (PE[pick_op_0] == -1) {
+  //       a = 'V';
+  //     } else {
+  //       a = 'H';
+  //     }      
+  //   } else {
+  //     a = std::to_string(PE[pick_op_0]);
+  //   }
+  //   if (PE[pick_op_1] < 0) {
+  //     if (PE[pick_op_1] == -1) {
+  //       b = 'V';
+  //     } else {
+  //       b = 'H';
+  //     }
+  //   } else {
+  //     b = std::to_string(PE[pick_op_1]);
+  //   }
+  //   printf("DEBUGGG: Pick valid_moevement_%zu, pick_op_0 = %d (%s), pick_op_1 = %d (%s)\n", _chosen_movement, pick_op_0, a.c_str(), pick_op_1, b.c_str());
+  // }
+  // ------------- debug message -------------
+
+  
 }
 
 void FP::Simulator::_change_PE_back() {
@@ -264,7 +378,8 @@ void FP::Simulator::_change_PE_back() {
       break;
     }
     case 1: {
-      _exchange_1_operator();
+      // _exchange_1_operator();
+      _PE_complement_chain(pick_op_0);
       break;
     }
     case 2: {
@@ -289,33 +404,36 @@ void FP::Simulator::_print_PE() {
 }
 
 void FP::Simulator::_SA() {
+  size_t tried_count = 0;
   double T = 1.;
   double T_threshold = 0.001;
-  double alpha = 0.85;
-  size_t k = 5;
-  // while (T > T_threshold) {
-  for (size_t rnd = 0; rnd < 50; rnd++) { // debug
-    std::cout << "start new SA round: T = " << T << std::endl;
+  double alpha = 0.99;
+  size_t k = 10;
+  while (T > T_threshold) {
+  // for (size_t rnd = 0; rnd < 5000; rnd++) { // debug
+  // while (true) {
+    // std::cout << "start new SA round: T = " << T << std::endl;
     size_t bad_moves = 0; // TODO: maybe use eg -10 ?
     for (size_t i = 0; i < k * _num_blocks; i++) {
-      std::cout << std::endl;
+      tried_count += 1;
+      // std::cout << std::endl;
       _movement();
-      _print_PE();
+      // _print_PE();
 
       double prev_cost = _cur_cost;
       _compute_cost();
       if (_cur_cost < prev_cost) {
         // better cost
-        std::cout << "better cost, accept" << std::endl;
+        // std::cout << "better cost, accept" << std::endl;
       } else {
-        double prob = double(random(0, 99)) / 100;
-        std::cout << "prob: " << prob << " " << T << std::endl;
+        double prob = double(rand()) / RAND_MAX;
+        // std::cout << "prob: " << prob << " " << T << std::endl;
         if (prob <= T) {
           // worse cost, but accept this change
-          std::cout << "worse cost, accept" << std::endl;
+          // std::cout << "worse cost, accept" << std::endl;
 
         } else {
-          std::cout << "worse cost, reject" << std::endl;
+          // std::cout << "worse cost, reject" << std::endl;
           bad_moves++;
           // if did not accpet the choice, need to change PE back
           _change_PE_back();
@@ -323,16 +441,14 @@ void FP::Simulator::_SA() {
       }
     }
     // decrease the temp
-    // T *= alpha;
+    T *= alpha;
 
     // early break if too many bad moves
     // TODO: adjust 5 / 100
-    std::cout << "tried = " << k * _num_blocks << ", bad_moves = " << bad_moves << "\n";
-    // if (bad_moves >= double(k) * _num_blocks * 5 / 100) {
-    //   break;
-    // }
-    // std::string xxx; std::cin >> xxx;
+    // std::cout << "tried = " << k * _num_blocks << ", bad_moves = " << bad_moves << "\n";
+    // if (bad_moves >= double(k) * _num_blocks * 5 / 100) break;
   }
+  std::cout << "tried_count = " << tried_count << std::endl;
 }
 
 void FP::Simulator::_update_best() {
@@ -346,11 +462,11 @@ void FP::Simulator::_update_best() {
 
 void FP::Simulator::_compute_cost() {
   auto [total_w, total_h] = _compute_area(0, PE.size(), 0, 0);
-  std::cout << "total: (w, h) = (" << total_w << ", " << total_h << ")\n";
+  // std::cout << "total: (w, h) = (" << total_w << ", " << total_h << ")\n";
   size_t area = total_w * total_h;
   
   double length = _compute_length();
-  std::cout << "_compute_cost: (area, length) = (" << area << ", " << length << ")\n";
+  // std::cout << "_compute_cost: (area, length) = (" << area << ", " << length << ")\n";
 
   // update norm if needed
   if (_norm_count < _norm_total) {
@@ -358,7 +474,7 @@ void FP::Simulator::_compute_cost() {
     _area_norm = (_area_norm * _norm_count + area) / (_norm_count + 1);
     _length_norm = (_length_norm * _norm_count + length) / (_norm_count + 1);
     _norm_count++;
-    std::cout << "norm updated: (area_norm, length_norm) = (" << _area_norm << ", " << _length_norm << ")\n";
+    // std::cout << "norm updated: (area_norm, length_norm) = (" << _area_norm << ", " << _length_norm << ")\n";
   }
 
   _cur_length = length;
@@ -389,7 +505,7 @@ std::pair<size_t, size_t> FP::Simulator::_compute_area(size_t start, size_t end,
     size_t block_w = _blocks_w_h[block_id][0], block_h = _blocks_w_h[block_id][1];
     _cur_centers[block_id].first = base_x + double(block_w) / 2;
     _cur_centers[block_id].second = base_y + double(block_h) / 2;
-    std::cout << "block " << PE[start] << " has a center point at (" <<  _cur_centers[block_id].first << ", " <<  _cur_centers[block_id].second << ")\n";
+    // std::cout << "block " << PE[start] << " has a center point at (" <<  _cur_centers[block_id].first << ", " <<  _cur_centers[block_id].second << ")\n";
     return std::make_pair(block_w, block_h);
   }
 
@@ -441,8 +557,8 @@ double FP::Simulator::_compute_length() {
         max_y = cur_y;
       }
     }
-    std::cout << "(min_x, max_x) = (" << min_x << ", " << max_x << ")\n";
-    std::cout << "(min_y, max_y) = (" << min_y << ", " << max_y << ")\n";
+    // std::cout << "(min_x, max_x) = (" << min_x << ", " << max_x << ")\n";
+    // std::cout << "(min_y, max_y) = (" << min_y << ", " << max_y << ")\n";
     total_length += (max_x - min_x) + (max_y - min_y);
   }
   return total_length;
