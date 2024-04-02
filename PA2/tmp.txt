@@ -1,0 +1,45 @@
+_constraint_width = 600, _constraint_height = 1200
+_num_blocks = 30, _num_terminals = 3
+_blocks_w_h:
+bk_1 100 300
+bk_2 200 100
+bk_3 200 100
+bk_4 300 100
+bk_5 200 100
+bk_6 100 300
+bk_7 200 100
+bk_8 200 100
+bk_9 300 100
+bk_10 200 100
+bk_11 100 300
+bk_12 200 100
+bk_13 200 100
+bk_14 300 100
+bk_15 200 100
+bk_16 100 300
+bk_17 200 100
+bk_18 200 100
+bk_19 300 100
+bk_20 200 100
+bk_21 100 300
+bk_22 200 100
+bk_23 200 100
+bk_24 300 100
+bk_25 200 100
+bk_26 100 300
+bk_27 200 100
+bk_28 200 100
+bk_29 300 100
+bk_30 200 100
+
+terminal_0 1281 1463
+terminal_1 1687 0
+terminal_2 266 0
+
+Net_0, _net_degree = 4:
+0
+1
+2
+3
+PE:
+0 1 V 2 3 H 4 5 V 6 7 H 8 9 V 10 11 H 12 13 V 14 15 H 16 17 V 18 19 H 20 21 V 22 23 H 24 25 V 26 27 H 28 29 V H V H V H V H V H V H V H V 

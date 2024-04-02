@@ -14,7 +14,7 @@ if [ $# -eq 0 ]; then
         echo "================================="
         echo "running test data" "input_pa2/${input_file}.block" "input_pa2/${input_file}.nets"
         ./fp $alpha "input_pa2/${input_file}.block" "input_pa2/${input_file}.nets" "output_${input_file}"
-        # ./checker/checker_linux "input_pa1/input_${input_file}" "output_${input_file}"
+        python3 checker/checker.py $input_file output_$input_file
     done
 else
     input_id="$1" # Input file number provided by the user
@@ -24,7 +24,7 @@ else
         exit 1
     fi
     ./fp $alpha "input_pa2/${input_file}.block" "input_pa2/${input_file}.nets" "output_${input_file}"
-    # ./checker/checker_linux "input_pa1/input_${input_id}" "output_${input_file}"
+    python3 checker/checker.py $input_file output_$input_file
     echo "================================="
 fi
 

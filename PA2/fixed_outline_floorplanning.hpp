@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 
+
 // define for check 
 #define FP_READ_CEHCK
 #define FP_INIT_CEHCK
@@ -29,6 +30,7 @@ private:
   void _movement();
   void _PE_swap(size_t idx1, size_t idx2);
   void _PE_complement_chain(size_t idx);
+  void _PE_block_rotate(size_t idx);
   bool _PE_validation(); // check whether the PE is valid
   void _change_PE_back();
   void _exchange_2_operands();
@@ -72,7 +74,8 @@ private:
   double _best_length;
   size_t _best_w;
   size_t _best_h;
-  std::vector<std::pair<double, double>> _best_centers;
+  std::vector<std::pair<size_t, size_t>> _best_lb;
+  std::vector<std::pair<size_t, size_t>> _best_ru;
   std::vector<int> _best_PE;
 
   void _compute_cost();
@@ -82,6 +85,7 @@ private:
 
   // debug
   void _print_PE();
+  size_t _area_sum;
 };
 
 } // namespace FP
