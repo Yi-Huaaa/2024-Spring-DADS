@@ -8,8 +8,8 @@
 
 
 // define for check 
-#define FP_READ_CEHCK
-#define FP_INIT_CEHCK
+// #define FP_READ_CEHCK
+// #define FP_INIT_CEHCK
 
 // fsim namespace
 namespace FP {
@@ -89,6 +89,7 @@ private:
   double penalty_factor = 2;
 
   bool _best_fit_init(bool cut_same_direction);
+  bool early_break_find_better_or_not;
 };
 
 } // namespace FP

@@ -107,6 +107,7 @@ print("     num of nets: {}".format(len(nets)))
 print("            area: {}".format(area))
 print(" area difference: {}".format((area-chip_area)/area))
 print("            hpwl: {}".format(hpwl/2))
+print("      wirelength: {}".format(wirelength))
 print(" hpwl difference: {}".format((hpwl/2-wirelength)/hpwl/2))
 print("      total cost: {}".format((hpwl/2+area)/2))
 print("            SAME" if same else

@@ -120,11 +120,11 @@ void FP::Simulator::_init(double alpha) {
 
   // try all kinds of init
   if (_best_fit_init(true)) {
-    std::cout << "_best_fit_init(true) success!" << std::endl;
+    // std::cout << "_best_fit_init(true) success!" << std::endl;
   } else if (_best_fit_init(false)) {
-    std::cout << "_best_fit_init(false) success!" << std::endl;
+    // std::cout << "_best_fit_init(false) success!" << std::endl;
   } else {
-    std::cout << "all init failed!" << std::endl;
+    // std::cout << "all init failed!" << std::endl;
   }
 
 #ifdef FP_INIT_CEHCK
@@ -150,9 +150,9 @@ void FP::Simulator::_init(double alpha) {
   for (size_t i = 0; i < _num_blocks; i++) {
     _area_sum += _blocks_w_h[i][0] * _blocks_w_h[i][1];
   }
-  std::cout << "area_sum = " << _area_sum << std::endl;
-  std::cout << "bound = " << _constraint_width * _constraint_height << std::endl;
-  std::cout << "ratio = " << double(_area_sum) / (_constraint_width * _constraint_height) << std::endl;
+  // std::cout << "area_sum = " << _area_sum << std::endl;
+  // std::cout << "bound = " << _constraint_width * _constraint_height << std::endl;
+  // std::cout << "ratio = " << double(_area_sum) / (_constraint_width * _constraint_height) << std::endl;
 }
 
 std::vector<int> reconstruct(
@@ -241,7 +241,7 @@ bool FP::Simulator::_best_fit_init(bool cut_same_direction) {
       }   
     }
     if (best_waste == 1000000000000) {
-      std::cout << "NOT FIT!\n";
+      // std::cout << "NOT FIT!\n";
       return false;
     }
 
@@ -271,10 +271,10 @@ bool FP::Simulator::_best_fit_init(bool cut_same_direction) {
     spaces.push_back(space1);
     candi.erase(candi.begin() + best_j);
 
-    std::cout << "========================\n";
-    std::cout << "picked space: (base_x, base_y) = (" << base_x << ", " << base_y << "), (space_w, space_h) = (" << space_w << ", " << space_h << ")\n";
-    std::cout << "picked block: id = " << best_block_id << ", (w, h) = (" << block_w << ", " << block_h << ")" << std::endl;
-    std::cout << "prev: id = " << prev_block_id << ", prev_cut = " << prev_cut << ", rel_cut = " << rel_cut << std::endl;
+    // std::cout << "========================\n";
+    // std::cout << "picked space: (base_x, base_y) = (" << base_x << ", " << base_y << "), (space_w, space_h) = (" << space_w << ", " << space_h << ")\n";
+    // std::cout << "picked block: id = " << best_block_id << ", (w, h) = (" << block_w << ", " << block_h << ")" << std::endl;
+    // std::cout << "prev: id = " << prev_block_id << ", prev_cut = " << prev_cut << ", rel_cut = " << rel_cut << std::endl;
 
     if (prev_cut == rel_cut) {
       children[prev_block_id].first = best_block_id;
@@ -288,7 +288,7 @@ bool FP::Simulator::_best_fit_init(bool cut_same_direction) {
   result.erase(result.begin());
   result.erase(result.end() - 1);
   PE = result;
-  std::cout << "SUCCESS!\n";
+  // std::cout << "SUCCESS!\n";
   return true;
 }
 
@@ -495,7 +495,7 @@ void FP::Simulator::_print_PE() {
 }
 
 void FP::Simulator::_SA() {
-  std::cout << "HI _SA\n";
+  // std::cout << "HI _SA\n";
   _found_in_bound = false;
   size_t tried_count = 0;
   double T = 1000;
@@ -503,6 +503,8 @@ void FP::Simulator::_SA() {
   double alpha = 0.95;
   size_t k = 30000;
   size_t max_tried_count = k * 3;
+  early_break_find_better_or_not = false;
+  double early_break_T = 900;
   while (T > T_threshold) {
     // std::cout << "start new SA round: T = " << T << std::endl;
     size_t bad_moves = 0; // TODO: maybe use eg -10 ?
@@ -531,7 +533,6 @@ void FP::Simulator::_SA() {
         if (prob > rand_val) {
           // worse cost, but accept this change
           // std::cout << "worse cost, accept" << std::endl;
-
         } else {
           // std::cout << "worse cost, reject" << std::endl;
           bad_moves++;
@@ -552,6 +553,9 @@ void FP::Simulator::_SA() {
     } else {
       // didn't find in bound, don't decrease the temp
       penalty_factor *= 2;
+    }
+    if (T < early_break_T && !early_break_find_better_or_not) {
+      return;
     }
   }
 }
@@ -575,6 +579,7 @@ void FP::Simulator::_update_best() {
     // std::cout << "block_w " << block_w << ", block_h " << block_h << "\n";
   }
   _best_PE = PE;
+  early_break_find_better_or_not = true;
 }
 
 void FP::Simulator::_compute_cost() {
@@ -613,8 +618,8 @@ void FP::Simulator::_compute_cost() {
 
   // check if can update best
   if (_cur_cost < _best_cost && is_in_bound) {
-    std::cout << "FOUND IN BOUND!!!\n";
-    std::cout << "update best cost: " << _best_cost << std::endl;
+    // std::cout << "FOUND IN BOUND!!!\n";
+    // std::cout << "update best cost: " << _best_cost << std::endl;
     _update_best();
   }
 }
