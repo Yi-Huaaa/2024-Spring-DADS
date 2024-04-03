@@ -118,7 +118,14 @@ void FP::Simulator::_init(double alpha) {
     vertical = -3 - vertical; // switch between V and H
   }
 
-  _best_fit_init();
+  // try all kinds of init
+  if (_best_fit_init(true)) {
+    std::cout << "_best_fit_init(true) success!" << std::endl;
+  } else if (_best_fit_init(false)) {
+    std::cout << "_best_fit_init(false) success!" << std::endl;
+  } else {
+    std::cout << "all init failed!" << std::endl;
+  }
 
 #ifdef FP_INIT_CEHCK
   printf("PE:\n");
@@ -168,7 +175,7 @@ std::vector<int> reconstruct(
   return result;
 }
 
-void FP::Simulator::_best_fit_init() {
+bool FP::Simulator::_best_fit_init(bool cut_same_direction) {
   // init
   std::vector<size_t> record_base_x; record_base_x.resize(_num_blocks);
   std::vector<size_t> record_base_y; record_base_y.resize(_num_blocks);
@@ -202,7 +209,7 @@ void FP::Simulator::_best_fit_init() {
             best_i = i;
             best_j = j;
             best_rot = 0;
-            best_cut = 0;
+            best_cut = cut_same_direction ? 0 : 1;
           }
           waste = space_h - block_h; // cut H
           if (waste < best_waste) {
@@ -210,7 +217,7 @@ void FP::Simulator::_best_fit_init() {
             best_i = i;
             best_j = j;
             best_rot = 0;
-            best_cut = 1;
+            best_cut = cut_same_direction ? 1 : 0;
           }
         }
         if (space_w >= block_h && space_h >= block_w) {
@@ -220,7 +227,7 @@ void FP::Simulator::_best_fit_init() {
             best_i = i;
             best_j = j;
             best_rot = 1;
-            best_cut = 0;
+            best_cut = cut_same_direction ? 0 : 1;
           }
           waste = space_h - block_w; // rotate and cut H
           if (waste < best_waste) {
@@ -228,14 +235,14 @@ void FP::Simulator::_best_fit_init() {
             best_i = i;
             best_j = j;
             best_rot = 1;
-            best_cut = 1;
+            best_cut = cut_same_direction ? 1 : 0;
           }
         }       
       }   
     }
     if (best_waste == 1000000000000) {
       std::cout << "NOT FIT!\n";
-      return;
+      return false;
     }
 
     // split
@@ -282,6 +289,7 @@ void FP::Simulator::_best_fit_init() {
   result.erase(result.end() - 1);
   PE = result;
   std::cout << "SUCCESS!\n";
+  return true;
 }
 
 void FP::Simulator::run(double alpha) {
