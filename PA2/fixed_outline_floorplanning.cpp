@@ -260,14 +260,14 @@ void FP::Simulator::_best_fit_init() {
     }
     
     spaces.erase(spaces.begin() + best_i);
-    spaces.push_back(space1);
     spaces.push_back(space2);
+    spaces.push_back(space1);
     candi.erase(candi.begin() + best_j);
 
-    // std::cout << "========================\n";
-    // std::cout << "picked space: (base_x, base_y) = (" << base_x << ", " << base_y << "), (space_w, space_h) = (" << space_w << ", " << space_h << ")\n";
-    // std::cout << "picked block: id = " << best_block_id << ", (w, h) = (" << block_w << ", " << block_h << ")" << std::endl;
-    // std::cout << "prev: id = " << prev_block_id << ", prev_cut = " << prev_cut << ", rel_cut = " << rel_cut << std::endl;
+    std::cout << "========================\n";
+    std::cout << "picked space: (base_x, base_y) = (" << base_x << ", " << base_y << "), (space_w, space_h) = (" << space_w << ", " << space_h << ")\n";
+    std::cout << "picked block: id = " << best_block_id << ", (w, h) = (" << block_w << ", " << block_h << ")" << std::endl;
+    std::cout << "prev: id = " << prev_block_id << ", prev_cut = " << prev_cut << ", rel_cut = " << rel_cut << std::endl;
 
     if (prev_cut == rel_cut) {
       children[prev_block_id].first = best_block_id;
@@ -281,6 +281,7 @@ void FP::Simulator::_best_fit_init() {
   result.erase(result.begin());
   result.erase(result.end() - 1);
   PE = result;
+  std::cout << "SUCCESS!\n";
 }
 
 void FP::Simulator::run(double alpha) {
