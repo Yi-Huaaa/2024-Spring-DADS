@@ -98,13 +98,21 @@ std::vector<size_t> sort_indices(const std::vector<std::vector<size_t>>& vec, si
   return indices;
 }
 
+std::vector<size_t> sort_indices2(const std::vector<std::vector<size_t>>& vec, size_t key_index, size_t start, size_t end) {
+  std::vector<size_t> indices(end-start);
+  std::iota(indices.begin()+start, indices.begin()+end, 0);
 
+  std::sort(indices.begin(), indices.end(), [&](size_t i, size_t j) {
+    return vec[i][key_index] > vec[j][key_index];
+  });
+
+  return indices;
+}
 
 void FP::Simulator::_init(double alpha) {  
   // set a random seed
   // srand(time(NULL));
   srand(9487);
-
   _alpha = alpha;
 
   // set initial PE and the start point of blocks
@@ -112,22 +120,17 @@ void FP::Simulator::_init(double alpha) {
   int vertical = -1;
   size_t push_back_vectrical = 0;
   // postorder traversal: 
-  for (size_t i = 0; i < _num_blocks; i+=2) {
+  for (size_t i = 0; i < _num_blocks; i += 2) {
     PE.push_back(i);
-    if ((i+1) < _num_blocks)
-      PE.push_back(i+1);
+    if ((i + 1) < _num_blocks) PE.push_back(i + 1);
     PE.push_back(vertical);
     vertical = -3 - vertical; // switch between V and H
     push_back_vectrical++;
   }
 
-  // printf("pre: push_back_vectrical = %ld\n", push_back_vectrical);
-
-  // size_t a = ((_num_blocks)&1 == 0) ? ((push_back_vectrical-1)) : ((push_back_vectrical-2)); // 
+  // pad H/V at the end of PE
   push_back_vectrical -= (_num_blocks & 1); // _num_blocks == even, -1, else -2
   push_back_vectrical--;
-  // printf("post: push_back_vectrical = %ld\n", push_back_vectrical);
-
   for (size_t i = 0; i < push_back_vectrical; i++) {
     PE.push_back(vertical);
     vertical = -3 - vertical; // switch between V and H
@@ -140,7 +143,7 @@ void FP::Simulator::_init(double alpha) {
 
   // init norm variables
   _norm_count = 0;
-  _norm_total = 10; // TODO: adjust this based on prob size
+  _norm_total = 2 * _num_blocks; // TODO: adjust this
   _area_norm = 0;
   _length_norm = 0;
 
@@ -151,199 +154,265 @@ void FP::Simulator::_init(double alpha) {
   _compute_cost();
   _update_best();
 
+  // calculate ideal area and ratio
+  _area_sum = 0;
+  for (size_t i = 0; i < _num_blocks; i++) {
+    _area_sum += _blocks_w_h[i][0] * _blocks_w_h[i][1];
+  }
+  std::cout << "area_sum = " << _area_sum << std::endl;
+  std::cout << "bound = " << _constraint_width * _constraint_height << std::endl;
+  std::cout << "ratio = " << double(_area_sum) / (_constraint_width * _constraint_height) << std::endl;
 
-// new new new new new new new new new new new new new new new new new
-  // Sort indices based on width (_blocks_w_h[0])
-  std::vector<size_t> sorted_indices_width = sort_indices(_blocks_w_h, 0);
+// // new new new new new new new new new new new new new new new new new
+
+// // new new new new new new new new new new new new new new new new new
+//   // Sort indices based on width (_blocks_w_h[0])
+//   std::vector<size_t> sorted_indices_width = sort_indices(_blocks_w_h, 0);
   
-  std::cout << "Sorted indices based on width:" << std::endl;
-  for (size_t i : sorted_indices_width) {
-      std::cout << i+1 << " ";
-  } std::cout << std::endl;
+//   std::cout << "Sorted indices based on width:" << std::endl;
+//   for (size_t i : sorted_indices_width) {
+//       std::cout << i+1 << " ";
+//   } std::cout << std::endl;
 
 
-  // 以寬度為主
-  std::vector<std::vector<int>> same_blocks; 
-  same_blocks.push_back(std::vector<int>());
-  same_blocks[0].push_back(sorted_indices_width[0]);
+//   // 以寬度為主
+//   std::vector<std::vector<int>> same_blocks; 
+//   same_blocks.push_back(std::vector<int>());
+//   same_blocks[0].push_back(sorted_indices_width[0]);
 
-  for (size_t i = 1; i < sorted_indices_width.size(); i++) {
-    size_t add_block_idx = sorted_indices_width[i];
-    // printf("i = %ld, add_block_idx = %ld, same_blocks.size() = %ld\n", i, add_block_idx+1, same_blocks.size());
-    size_t now_w = _blocks_w_h[add_block_idx][0];
-    size_t now_h = _blocks_w_h[add_block_idx][1];
-    bool inside = false;
-    for (size_t j = 0 ; j < same_blocks.size(); j++) {
-      // printf("j = %ld\n", j);
-      size_t pre_block_idx = same_blocks[j][0];
-      size_t pre_w = _blocks_w_h[pre_block_idx][0];
-      size_t pre_h = _blocks_w_h[pre_block_idx][1];
-      // printf("now_w = %ld, now_h = %ld, pre_w = %ld, pre_h = %ld\n", now_w, now_h, pre_w, pre_h);
-      if ((now_w == pre_w) && (now_h == pre_h)) {
-        // printf("case0\n");
-        same_blocks[j].push_back(add_block_idx);
-        inside = true;
-        break;
-      }
-    }
-    if (!inside) {
-      // printf("case1\n");
-      same_blocks.push_back(std::vector<int>());
-      same_blocks[same_blocks.size()-1].push_back(add_block_idx);    
-    }
-    // printf("\n\n");
-  }
+//   for (size_t i = 1; i < sorted_indices_width.size(); i++) {
+//     size_t add_block_idx = sorted_indices_width[i];
+//     // printf("i = %ld, add_block_idx = %ld, same_blocks.size() = %ld\n", i, add_block_idx+1, same_blocks.size());
+//     size_t now_w = _blocks_w_h[add_block_idx][0];
+//     size_t now_h = _blocks_w_h[add_block_idx][1];
+//     bool inside = false;
+//     for (size_t j = 0 ; j < same_blocks.size(); j++) {
+//       // printf("j = %ld\n", j);
+//       size_t pre_block_idx = same_blocks[j][0];
+//       size_t pre_w = _blocks_w_h[pre_block_idx][0];
+//       size_t pre_h = _blocks_w_h[pre_block_idx][1];
+//       // printf("now_w = %ld, now_h = %ld, pre_w = %ld, pre_h = %ld\n", now_w, now_h, pre_w, pre_h);
+//       if ((now_w == pre_w) && (now_h == pre_h)) {
+//         // printf("case0\n");
+//         same_blocks[j].push_back(add_block_idx);
+//         inside = true;
+//         break;
+//       }
+//     }
+//     if (!inside) {
+//       // printf("case1\n");
+//       same_blocks.push_back(std::vector<int>());
+//       same_blocks[same_blocks.size()-1].push_back(add_block_idx);    
+//     }
+//     // printf("\n\n");
+//   }
 
-  printf("same_blocks:\n");
-  for (size_t i = 0; i < same_blocks.size(); i++) {
-    printf("%ld: ", i);
-    for (size_t j = 0; j < same_blocks[i].size(); j++) {
-      printf("%d, ", same_blocks[i][j]+1);
-    }
-    printf("\n");
-  }
+//   printf("same_blocks:\n");
+//   for (size_t i = 0; i < same_blocks.size(); i++) {
+//     printf("%ld: ", i);
+//     for (size_t j = 0; j < same_blocks[i].size(); j++) {
+//       printf("%d, ", same_blocks[i][j]+1);
+//     }
+//     printf("\n");
+//   }
 
-  // 根據寬度大小，一直往高度塞
-  std::vector<std::vector<size_t>> remain_regions; // w, h
-  size_t height_accum = 0;
-  size_t h_acc_num = 0;
+//   // 根據寬度大小，一直往高度塞
+//   std::vector<std::vector<size_t>> remain_regions; // w, h
+//   size_t height_accum = 0;
+//   size_t h_acc_num = 0;
 
 
-  // 這裡的 update 也要多個 case
-  while ((height_accum < _constraint_height) && (h_acc_num < same_blocks.size())) {
-    printf("same_blocks[h_acc_num][0] = %ld\n", same_blocks[h_acc_num][0]+1);
-    size_t h = _blocks_w_h[same_blocks[h_acc_num][0]][1];
-    height_accum += (h)*same_blocks[h_acc_num].size();
-    printf("(h)*same_blocks[h_acc_num].size() = %ld, h = %ld, same_blocks[h_acc_num].size() = %ld\n", (h)*same_blocks[h_acc_num].size(), h, same_blocks[h_acc_num].size());
-    remain_regions.push_back(std::vector<size_t>());
-    printf("_constraint_width = %ld, add = %ld\n", _constraint_width, _blocks_w_h[same_blocks[h_acc_num][0]][0]);
-    remain_regions[h_acc_num].push_back(_constraint_width - _blocks_w_h[same_blocks[h_acc_num][0]][0]); // w
-    remain_regions[h_acc_num].push_back(_constraint_height - (h)*same_blocks[h_acc_num].size()); // h
-    h_acc_num++;
-    printf("?!height_accum = %ld, _constraint_height = %ld\n", height_accum, _constraint_height);
-  }
+//   // 這裡的 update 也要多個 case
+//   while ((height_accum < _constraint_height) && (h_acc_num < same_blocks.size())) {
+//     printf("same_blocks[h_acc_num][0] = %ld\n", same_blocks[h_acc_num][0]+1);
+//     size_t h = _blocks_w_h[same_blocks[h_acc_num][0]][1];
+//     height_accum += (h)*same_blocks[h_acc_num].size();
+//     printf("(h)*same_blocks[h_acc_num].size() = %ld, h = %ld, same_blocks[h_acc_num].size() = %ld\n", (h)*same_blocks[h_acc_num].size(), h, same_blocks[h_acc_num].size());
+//     remain_regions.push_back(std::vector<size_t>());
+//     printf("_constraint_width = %ld, add = %ld\n", _constraint_width, _blocks_w_h[same_blocks[h_acc_num][0]][0]);
+//     remain_regions[h_acc_num].push_back(_constraint_width - _blocks_w_h[same_blocks[h_acc_num][0]][0]); // w
+//     remain_regions[h_acc_num].push_back(_constraint_height - (h)*same_blocks[h_acc_num].size()); // h
+//     h_acc_num++;
+//     printf("?!height_accum = %ld, _constraint_height = %ld\n", height_accum, _constraint_height);
+//   }
   
-  if (height_accum > _constraint_height) {
-    h_acc_num--;
-    size_t h = _blocks_w_h[same_blocks[h_acc_num][0]][1];
-    height_accum -= (h)*same_blocks[h_acc_num].size();
-    remain_regions.pop_back();
-  }
+//   if (height_accum > _constraint_height) {
+//     h_acc_num--;
+//     size_t h = _blocks_w_h[same_blocks[h_acc_num][0]][1];
+//     height_accum -= (h)*same_blocks[h_acc_num].size();
+//     remain_regions.pop_back();
+//   }
 
-  printf("height_accum = %ld, h_acc_num = %ld, _constraint_height = %ld\n", height_accum, h_acc_num, _constraint_height);
+//   printf("height_accum = %ld, h_acc_num = %ld, _constraint_height = %ld\n", height_accum, h_acc_num, _constraint_height);
 
-  printf("wid_accum:\n");
-  for (size_t i = 0; i < remain_regions.size(); i++) {
-    printf("i = %ld, remain_w = %ld, remain_h = %ld\n", i, remain_regions[i][0], remain_regions[i][1]);
-  }
+//   printf("wid_accum:\n");
+//   for (size_t i = 0; i < remain_regions.size(); i++) {
+//     printf("i = %ld, remain_w = %ld, remain_h = %ld\n", i, remain_regions[i][0], remain_regions[i][1]);
+//   }
   
 
-  std::vector<std::vector<size_t>> final_packing_results; final_packing_results.resize(h_acc_num);
-  for (size_t i = 0; i < h_acc_num; i++) {
-    for (size_t k = 0; k < same_blocks[i].size(); k++) {
-      final_packing_results[i].push_back(same_blocks[i][k]);
-    }
-  }
-  printf("init final_packing_results:\n");
-  for (size_t i = 0; i < final_packing_results.size(); i++) {
-    printf("%ld: ", i);
-    for (size_t j = 0; j < final_packing_results[i].size(); j++) {
-      printf("%ld, ", final_packing_results[i][j]+1);
-    }
-    printf("\n");
-  }  
+//   std::vector<std::vector<size_t>> final_packing_results; final_packing_results.resize(h_acc_num);
+//   for (size_t i = 0; i < h_acc_num; i++) {
+//     for (size_t k = 0; k < same_blocks[i].size(); k++) {
+//       final_packing_results[i].push_back(same_blocks[i][k]);
+//     }
+//   }
+//   printf("init final_packing_results:\n");
+//   for (size_t i = 0; i < final_packing_results.size(); i++) {
+//     printf("%ld: ", i);
+//     for (size_t j = 0; j < final_packing_results[i].size(); j++) {
+//       printf("%ld, ", final_packing_results[i][j]+1);
+//     }
+//     printf("\n");
+//   }  
 
 
-  std::vector<bool> whether_rotate; whether_rotate.resize((same_blocks.size() - h_acc_num + 1), false);
-  for (size_t i = h_acc_num; i < same_blocks.size(); i++) {
-    // 開始嘗試一邊 rotate 一邊塞進去
-    // case 0: 疊橫 不轉
-    size_t added_w_0 = (_blocks_w_h[same_blocks[i][0]][0])*same_blocks[i].size();
-    size_t added_h_0 = (_blocks_w_h[same_blocks[i][0]][1]);
+//   std::vector<bool> whether_rotate; whether_rotate.resize((same_blocks.size() - h_acc_num + 1), false);
+//   for (size_t i = h_acc_num; i < same_blocks.size(); i++) {
+//     // 開始嘗試一邊 rotate 一邊塞進去
+//     // case 0: 疊橫 不轉
+//     size_t added_w_0 = (_blocks_w_h[same_blocks[i][0]][0])*same_blocks[i].size();
+//     size_t added_h_0 = (_blocks_w_h[same_blocks[i][0]][1]);
 
-    // case 1: 疊直 不轉
-    size_t added_w_1 = (_blocks_w_h[same_blocks[i][0]][0]);
-    size_t added_h_1 = (_blocks_w_h[same_blocks[i][0]][1])*same_blocks[i].size();
+//     // case 1: 疊直 不轉
+//     size_t added_w_1 = (_blocks_w_h[same_blocks[i][0]][0]);
+//     size_t added_h_1 = (_blocks_w_h[same_blocks[i][0]][1])*same_blocks[i].size();
 
-    // case 2: 疊橫 轉
-    size_t added_w_2 = added_h_0;
-    size_t added_h_2 = added_w_0;
+//     // case 2: 疊橫 轉
+//     size_t added_w_2 = added_h_0;
+//     size_t added_h_2 = added_w_0;
 
-    // case 3: 疊直 轉
-    size_t added_w_3 = added_h_1;
-    size_t added_h_3 = added_w_1;
+//     // case 3: 疊直 轉
+//     size_t added_w_3 = added_h_1;
+//     size_t added_h_3 = added_w_1;
     
-    // printf("! i = %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld\n", i, added_w_0, added_h_0, added_w_1, added_h_1, added_w_2, added_h_2, added_w_3, added_h_3);
-    for (size_t j = 0; j < remain_regions.size(); j++) { // 已經存在的大型 blocks 剩下的區域看看塞不塞得進去
-      size_t remain_w = remain_regions[j][0];
-      size_t remain_h = remain_regions[j][1];
-      // printf("j = %ld, remain_w = %ld, remain_h = %ld\n", j, remain_w, remain_h);
-      // case 0
-      if ((added_w_0 <= remain_w) && (added_h_0 <= remain_h)) { // case 0
-        for (size_t k = 0; k < same_blocks[i].size(); k++) {
-          final_packing_results[j].push_back(same_blocks[i][k]);
-        }
-        remain_regions[j][0] -= added_w_0;
-        remain_regions[j][1] -= added_h_0;
-        whether_rotate[j] = false;
-        // printf("Merge! case 0\n");
-        break;
-      } else if ((added_w_1 <= remain_w) && (added_h_1 <= remain_h)) { 
-        for (size_t k = 0; k < same_blocks[i].size(); k++) {
-          final_packing_results[j].push_back(same_blocks[i][k]);
-        }
-        remain_regions[j][0] -= added_w_1;
-        remain_regions[j][1] -= added_h_1;
-        whether_rotate[j] = false;
-        // printf("Merge! case 1\n");
-        break;
-      } else if ((added_w_2 <= remain_w) && (added_h_2 <= remain_h)) { // case 2
-        for (size_t k = 0; k < same_blocks[i].size(); k++) {
-          final_packing_results[j].push_back(same_blocks[i][k]);
-        }
-        remain_regions[j][0] -= added_w_2;
-        remain_regions[j][1] -= added_h_2;
-        whether_rotate[j] = true;
-        // printf("Merge! case 2\n");
-        break;
-      } else if ((added_w_3 <= remain_w) && (added_h_3 <= remain_h)) { // case 3
-        for (size_t k = 0; k < same_blocks[i].size(); k++) {
-          final_packing_results[j].push_back(same_blocks[i][k]);
-        }
-        remain_regions[j][0] -= added_w_3;
-        remain_regions[j][1] -= added_h_3;
-        whether_rotate[j] = true;
-        // printf("Merge! case 3\n");
-        break;
-      }
-      // printf("\n");
-    }
-    // printf("\n\n");
-  }
+//     // printf("! i = %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld\n", i, added_w_0, added_h_0, added_w_1, added_h_1, added_w_2, added_h_2, added_w_3, added_h_3);
+//     for (size_t j = 0; j < remain_regions.size(); j++) { // 已經存在的大型 blocks 剩下的區域看看塞不塞得進去
+//       size_t remain_w = remain_regions[j][0];
+//       size_t remain_h = remain_regions[j][1];
+//       // printf("j = %ld, remain_w = %ld, remain_h = %ld\n", j, remain_w, remain_h);
+//       // case 0
+//       if ((added_w_0 <= remain_w) && (added_h_0 <= remain_h)) { // case 0
+//         for (size_t k = 0; k < same_blocks[i].size(); k++) {
+//           final_packing_results[j].push_back(same_blocks[i][k]);
+//         }
+//         remain_regions[j][0] -= added_w_0;
+//         remain_regions[j][1] -= added_h_0;
+//         whether_rotate[j] = false;
+//         // printf("Merge! case 0\n");
+//         break;
+//       } else if ((added_w_1 <= remain_w) && (added_h_1 <= remain_h)) { 
+//         for (size_t k = 0; k < same_blocks[i].size(); k++) {
+//           final_packing_results[j].push_back(same_blocks[i][k]);
+//         }
+//         remain_regions[j][0] -= added_w_1;
+//         remain_regions[j][1] -= added_h_1;
+//         whether_rotate[j] = false;
+//         // printf("Merge! case 1\n");
+//         break;
+//       } else if ((added_w_2 <= remain_w) && (added_h_2 <= remain_h)) { // case 2
+//         for (size_t k = 0; k < same_blocks[i].size(); k++) {
+//           final_packing_results[j].push_back(same_blocks[i][k]);
+//         }
+//         remain_regions[j][0] -= added_w_2;
+//         remain_regions[j][1] -= added_h_2;
+//         whether_rotate[j] = true;
+//         // printf("Merge! case 2\n");
+//         break;
+//       } else if ((added_w_3 <= remain_w) && (added_h_3 <= remain_h)) { // case 3
+//         for (size_t k = 0; k < same_blocks[i].size(); k++) {
+//           final_packing_results[j].push_back(same_blocks[i][k]);
+//         }
+//         remain_regions[j][0] -= added_w_3;
+//         remain_regions[j][1] -= added_h_3;
+//         whether_rotate[j] = true;
+//         // printf("Merge! case 3\n");
+//         break;
+//       }
+//       // printf("\n");
+//     }
+//     // printf("\n\n");
+//   }
 
-  printf("FINAL final_packing_results:\n");
-  for (size_t i = 0; i < final_packing_results.size(); i++) {
-    printf("%ld: ", i);
-    for (size_t j = 0; j < final_packing_results[i].size(); j++) {
-      printf("%ld, ", final_packing_results[i][j]+1);
-    }
-    printf("\n");
-  }  
+//   printf("FINAL final_packing_results:\n");
+//   for (size_t i = 0; i < final_packing_results.size(); i++) {
+//     printf("%ld: ", i);
+//     for (size_t j = 0; j < final_packing_results[i].size(); j++) {
+//       printf("%ld, ", final_packing_results[i][j]+1);
+//     }
+//     printf("\n");
+//   }  
 
-  // test 能不能找到所有人
-  std::vector<bool> find_all_blocks; find_all_blocks.resize(_num_blocks, false);
-  for (size_t i = 0; i < final_packing_results.size(); i++) {
-    for (size_t j = 0; j < final_packing_results[i].size(); j++) {
-      find_all_blocks[final_packing_results[i][j]] = true;
-    }
-  }
+//   // whether_rotate
+//   for (size_t i = 0; i < whether_rotate.size(); i++) {
+//     if (whether_rotate[i])
+//       printf("whether_rotate[%ld] = true\n", i);
+//     else
+//       printf("whether_rotate[%ld] = false\n", i);
+//   }
 
-  for (size_t i = 0; i < find_all_blocks.size(); i++) {
-    if (find_all_blocks[i] == false) {
-      printf("ERROR: %ld miss in the rectrangular graph\n", i+1);
-      exit(1);
-    }
-  }
+//   // test 能不能找到所有人
+//   std::vector<bool> find_all_blocks; find_all_blocks.resize(_num_blocks, false);
+//   for (size_t i = 0; i < final_packing_results.size(); i++) {
+//     for (size_t j = 0; j < final_packing_results[i].size(); j++) {
+//       find_all_blocks[final_packing_results[i][j]] = true;
+//     }
+//   }
+
+//   for (size_t i = 0; i < find_all_blocks.size(); i++) {
+//     if (find_all_blocks[i] == false) {
+//       printf("ERROR: %ld miss in the rectrangular graph\n", i+1);
+//       exit(1);
+//     }
+//   }
+
+//   PE.clear();
+//   PE = {6, 7, -2, 1, -1, 9, 11, -2, 2, -1, 8, 10, -2, 3, 4, -2, 5, -2, -1, -2, -2};
+//   for (size_t i = 0; i < PE.size(); i++) {
+//     if (PE[i]>0)
+//         PE[i]--;
+//   }
+
+  
+
+
+//   // whether_rotate
+//   size_t need_to_roate[2] = {0, 1}; // block_idx
+//   for (size_t i = 0; i < 2; i++) {
+//     size_t idx = need_to_roate[i];
+//     size_t tmp = _blocks_w_h[idx][0];
+//     _blocks_w_h[idx][0] = _blocks_w_h[idx][1];
+//     _blocks_w_h[idx][1] = tmp;
+//   }  
+
+//   printf(":bibi\n");
+//   _print_PE();
+//   bool a = _PE_validation();
+//   if (a == false) {
+//     printf("Q\n");
+//     exit(1);
+//   }
+
+ 
+//   // init norm variables
+//   _norm_count = 0;
+//   _norm_total = 10; // TODO: adjust this based on prob size
+//   _area_norm = 0;
+//   _length_norm = 0;
+
+//   // compute the cost of the initial PE
+//   _cur_centers.resize(_num_blocks);
+//   _best_lb.resize(_num_blocks);
+//   _best_ru.resize(_num_blocks);
+//   _compute_cost();
+//   _update_best(); 
+
+  // for (size_t i = 0; i < find_all_blocks.size(); i++) {
+  //   if (find_all_blocks[i] == false) {
+  //     printf("ERROR: %ld miss in the rectrangular graph\n", i+1);
+  //     exit(1);
+  //   }
+  // }
   
 
 //   // use width as major 
@@ -440,15 +509,6 @@ void FP::Simulator::run(double alpha) {
   // initialization
   _init(alpha);
 
-  // debug
-  _area_sum = 0;
-  for (size_t i = 0; i < _num_blocks; i++) {
-    _area_sum += _blocks_w_h[i][0] * _blocks_w_h[i][1];
-  }
-  std::cout << "area_sum = " << _area_sum << std::endl;
-  std::cout << "bound = " << _constraint_width * _constraint_height << std::endl;
-  std::cout << "ratio = " << double(_area_sum) / (_constraint_width * _constraint_height) << std::endl;
-
   // iteration
   for (size_t iter = 0; iter < FP_ITERATION; iter++) {
     _SA();
@@ -481,17 +541,6 @@ int random(int min, int max) {
   return std::rand() % (max - min + 1) + min;
 }
 
-void FP::Simulator::_exchange_2_operands() {
-  int tmp = PE[pick_op_0];
-  PE[pick_op_0] = PE[pick_op_1];
-  PE[pick_op_1] = tmp;
-}
-
-void FP::Simulator::_exchange_1_operator() {
-  int ori_V_H = PE[pick_op_0];
-  PE[pick_op_0] = (ori_V_H == -1) ? (-2) : (-1);      
-}
-
 bool FP::Simulator::_PE_validation() {
   int count = 0;
   for (int x: PE) {
@@ -505,7 +554,7 @@ bool FP::Simulator::_PE_validation() {
 }
 
 void FP::Simulator::_PE_swap(size_t idx1, size_t idx2) {
-  size_t tmp = PE[idx1];
+  int tmp = PE[idx1];
   PE[idx1] = PE[idx2];
   PE[idx2] = tmp;
 }
@@ -513,7 +562,7 @@ void FP::Simulator::_PE_swap(size_t idx1, size_t idx2) {
 void FP::Simulator::_PE_complement_chain(size_t idx) {
   for (size_t i = idx; i < PE.size(); i++) {
     if (PE[i] >= 0) break;
-    PE[i] = -3 - PE[i];
+    PE[i] = -3 - PE[i]; // V <-> H
   }
 }
 
@@ -592,64 +641,58 @@ void FP::Simulator::_movement() {
   // }
   // // std::cout << "DEBUGGG: " << _chosen_movement << " " << pick_op_0 << " " << pick_op_1 << std::endl;
 
-
-
   // bi
-
   bool valid_movement = false;
-  while(!valid_movement) {
+  while (!valid_movement) {
     _chosen_movement = random(0, 3);
-    // printf("_chosen_movement = %zu\n", _chosen_movement);
-    if (_chosen_movement == 0) { // movement_0
-      bool stop = false;
-      size_t faild_find_time = 0;
-      while (!stop && faild_find_time < 10) {
+    if (_chosen_movement == 0) { // movement_0: swap adjacent numbers
+      size_t failed_find_times = 0;
+      while (failed_find_times < 10) {
         pick_op_0 = random(0, PE.size() - 2);
         if (PE[pick_op_0] >= 0) { // pick a number
           pick_op_1 = pick_op_0 + 1;          
-          while (PE[pick_op_1] < 0 && (size_t(pick_op_1) < (PE.size()))) { // find the adjacent number
+          while (PE[pick_op_1] < 0 && pick_op_1 < PE.size()) { // find the adjacent number
             pick_op_1++;
           }
-          if ((PE[pick_op_1] >= 0) && (size_t(pick_op_1) < PE.size())) {
-            stop = true;
+          if (PE[pick_op_1] >= 0 && pick_op_1 < PE.size()) {
             valid_movement = true; // find a valid movement_0
+            break;
           }
         }
-        faild_find_time++;
+        failed_find_times++;
       }
-      if (valid_movement)
-        _PE_swap(pick_op_0, pick_op_1);
-    } else if (_chosen_movement == 1) { // movement_1
-      bool stop = false;
-      while (!stop) {
-        pick_op_0 = random(0, PE.size() - 2);
-        if ((PE[pick_op_0] < 0)) {
+      if (valid_movement) _PE_swap(pick_op_0, pick_op_1);
+    } else if (_chosen_movement == 1) { // movement_1: complement chains
+      while (true) {
+        pick_op_0 = random(0, PE.size() - 1);
+        if (PE[pick_op_0] < 0) {
           _PE_complement_chain(pick_op_0);
-          stop = true;
           valid_movement = true; // find a valid movement_1 
+          break;
         }
       }
-    } else if (_chosen_movement == 2) { // movement_2
-      bool stop = false;
-      while (!stop) {
+    } else if (_chosen_movement == 2) { // movement_2: swap adjacent number and symbol but need to check
+      while (true) {
         pick_op_0 = random(0, PE.size() - 2);
         pick_op_1 = pick_op_0 + 1;
+
+        // symbol + number or number + symbol
         if ((PE[pick_op_0] < 0 && PE[pick_op_1] >= 0) || (PE[pick_op_0] >= 0 && PE[pick_op_1] < 0)) {
-          stop = true;
           _PE_swap(pick_op_0, pick_op_1);
           valid_movement = _PE_validation();
+          if (valid_movement) {
+            break;
+          } else {
+            _PE_swap(pick_op_0, pick_op_1);
+          }
         }
-      }
-      if (!valid_movement) {
-        _PE_swap(pick_op_0, pick_op_1);
-      }   
+      } 
     } else if (_chosen_movement == 3) { // rotate
       do {
         pick_op_0 = random(0, PE.size() - 1);
       } while (PE[pick_op_0] < 0);
       _PE_block_rotate(pick_op_0);
       valid_movement = true;
-      // std::cout << "rotate " << pick_op_0 << " " << PE[pick_op_0] << "\n";
     }
   }
   // ------------- debug message ------------- 
@@ -691,8 +734,6 @@ void FP::Simulator::_movement() {
   //   printf("DEBUGGG: Pick valid_moevement_%zu, pick_op_0 = %d (%s), pick_op_1 = %d (%s)\n", _chosen_movement, pick_op_0, a.c_str(), pick_op_1, b.c_str());
   // }
   // ------------- debug message -------------
-
-  
 }
 
 void FP::Simulator::_change_PE_back() {
@@ -702,7 +743,6 @@ void FP::Simulator::_change_PE_back() {
       break;
     }
     case 1: {
-      // _exchange_1_operator();
       _PE_complement_chain(pick_op_0);
       break;
     }
@@ -717,7 +757,6 @@ void FP::Simulator::_change_PE_back() {
     default: {
       // programming error
       exit(1);
-      break;
     }
   }
 }
@@ -733,14 +772,16 @@ void FP::Simulator::_print_PE() {
 
 void FP::Simulator::_SA() {
   size_t tried_count = 0;
-  double T = 1.;
-  double T_threshold = 0.05;
-  double alpha = 0.999999999;
+  double T = 1000;
+  double T_threshold = 0.01; // 決定要跑幾 round
+  double alpha = 0.95;
   size_t k = 1000;
-  // while (T > T_threshold) {
-  for (size_t rnd = 0; rnd < 50000; rnd++) { // debug
+  size_t rnd = 0;
+  while (T > T_threshold) {
+  // for (size_t rnd = 0; rnd < 5000; rnd++) { // debug
     // std::cout << "start new SA round: T = " << T << std::endl;
     if (rnd % 1000 == 0) std::cout << "rnd = " << rnd << std::endl;
+    rnd++;
     size_t bad_moves = 0; // TODO: maybe use eg -10 ?
     for (size_t i = 0; i < k * _num_blocks; i++) {
       tried_count += 1;
@@ -755,8 +796,6 @@ void FP::Simulator::_SA() {
       //   std::cout << i << " " << _blocks_w_h[i][0] << " " << _blocks_w_h[i][1] << "\n";
       // }
 
-      // std::string xxx; std::cin >> xxx;
-
       double prev_cost = _cur_cost;
       _compute_cost();
       if (_cur_cost < prev_cost) {
@@ -765,6 +804,7 @@ void FP::Simulator::_SA() {
       } else {
         double prob = double(rand()) / RAND_MAX;
         // std::cout << "prob: " << prob << " " << T << std::endl;
+        // TODO: try <= exp(-∆L/T)
         if (prob <= T) {
           // worse cost, but accept this change
           // std::cout << "worse cost, accept" << std::endl;
@@ -778,7 +818,7 @@ void FP::Simulator::_SA() {
       }
     }
     // decrease the temp
-    // T *= alpha;
+    T *= alpha;
 
     // early break if too many bad moves
     // TODO: adjust 5 / 100
@@ -802,17 +842,17 @@ void FP::Simulator::_update_best() {
     _best_lb[i].second = lb_y;
     _best_ru[i].first = ru_x;
     _best_ru[i].second = ru_y;
+    printf("i = %ld, lb_x = %ld, lb_y = %ld\n", i, lb_x, lb_y);
+    std::cout << "center_x " << center_x << ", center_y " << center_y << "\n";
+    std::cout << "block_w " << block_w << ", block_h " << block_h << "\n";
   }
   _best_PE = PE;
 }
 
 void FP::Simulator::_compute_cost() {
   auto [total_w, total_h] = _compute_area(0, PE.size(), 0, 0);
-  // std::cout << "total: (w, h) = (" << total_w << ", " << total_h << ")\n";
   size_t area = total_w * total_h;
-  
   double length = _compute_length();
-  // std::cout << "_compute_cost: (area, length) = (" << area << ", " << length << ")\n";
 
   // update norm if needed
   if (_norm_count < _norm_total) {
@@ -820,28 +860,30 @@ void FP::Simulator::_compute_cost() {
     _area_norm = (_area_norm * _norm_count + area) / (_norm_count + 1);
     _length_norm = (_length_norm * _norm_count + length) / (_norm_count + 1);
     _norm_count++;
-    // std::cout << "norm updated: (area_norm, length_norm) = (" << _area_norm << ", " << _length_norm << ")\n";
   }
 
+  // set as current (for update best)
   _cur_length = length;
   _cur_w = total_w;
   _cur_h = total_h;
 
   // add penalty if out of bounds
-  // TODO: adjust this
-  double penalty_factor = 100;
+  // TODO: dynamic penalty factor
+  double penalty_factor = 10000; // TODO: adjust this
   if (total_w > _constraint_width) {
-    area += penalty_factor * (total_w - _constraint_width) * total_h;
+    // area += penalty_factor * (total_w - _constraint_width) * total_h;
+    length += penalty_factor * (total_w - _constraint_width) * total_h;
   }
   if (total_h > _constraint_height) {
-    area += penalty_factor * (total_h - _constraint_height) * total_w;
+    // area += penalty_factor * (total_h - _constraint_height) * total_w;
+    length += penalty_factor * (total_h - _constraint_height) * total_w;
   }
   _cur_cost = _alpha * area / _area_norm + (1 - _alpha) * length / _length_norm;
   bool is_in_bound = total_w <= _constraint_width && total_h <= _constraint_height;
 
+  // check if can update best
   if (_cur_cost < _best_cost && is_in_bound) {
     std::cout << "FOUND IN BOUND!!!\n";
-    // std::string xxx; std::cin >> xxx; 
     std::cout << "update best cost: " << _best_cost << std::endl;
     _update_best();
   }
@@ -851,20 +893,22 @@ std::pair<size_t, size_t> FP::Simulator::_compute_area(size_t start, size_t end,
   if (end == start + 1) {
     size_t block_id = PE[start];
     size_t block_w = _blocks_w_h[block_id][0], block_h = _blocks_w_h[block_id][1];
+
+    // set the center points so we can compute lengths
     _cur_centers[block_id].first = base_x + double(block_w) / 2;
     _cur_centers[block_id].second = base_y + double(block_h) / 2;
-    // std::cout << "block " << PE[start] << " has a center point at (" <<  _cur_centers[block_id].first << ", " <<  _cur_centers[block_id].second << ")\n";
     return std::make_pair(block_w, block_h);
   }
 
+  // find the `i` that splits left and right trees
   int count = 1, i;
   for (i = int(end) - 1; i >= int(start); i--) {
     count += (PE[i] >= 0) ? 1 : -1;
     if (count == 1) break;
   }
-  size_t left_w, left_h;
-  std::tie(left_w, left_h) = _compute_area(start, i, base_x, base_y);
 
+  // compute area of left tree
+  auto [left_w, left_h] = _compute_area(start, i, base_x, base_y);
   if (PE[end - 1] == -1) {
     // V case
     base_x += left_w;
@@ -873,9 +917,10 @@ std::pair<size_t, size_t> FP::Simulator::_compute_area(size_t start, size_t end,
     base_y += left_h;
   }
 
-  size_t right_w, right_h;
-  std::tie(right_w, right_h) = _compute_area(i, end - 1, base_x, base_y);
+  // compute area of right tree
+  auto [right_w, right_h] = _compute_area(i, end - 1, base_x, base_y);
 
+  // return the total width and height
   if (PE[end - 1] == -1) {
     // V case
     return std::make_pair(left_w + right_w, std::max(left_h, right_h));
@@ -905,8 +950,8 @@ double FP::Simulator::_compute_length() {
         max_y = cur_y;
       }
     }
-    // std::cout << "(min_x, max_x) = (" << min_x << ", " << max_x << ")\n";
-    // std::cout << "(min_y, max_y) = (" << min_y << ", " << max_y << ")\n";
+
+    // HPWL
     total_length += (max_x - min_x) + (max_y - min_y);
   }
   return total_length;

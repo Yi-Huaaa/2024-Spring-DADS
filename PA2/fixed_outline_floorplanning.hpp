@@ -33,8 +33,6 @@ private:
   void _PE_block_rotate(size_t idx);
   bool _PE_validation(); // check whether the PE is valid
   void _change_PE_back();
-  void _exchange_2_operands();
-  void _exchange_1_operator();
   size_t _is_blk_or_ter(std::string input_str); // 0: blk, 1: ter
 
   std::unordered_map<std::string, size_t> _map_blk_to_id; // map block to id
@@ -54,8 +52,8 @@ private:
   std::vector<size_t> _block_PE_idx; // record each block located at PE's which place
 
   size_t _chosen_movement; // choose which movement 
-  int pick_op_0; // picked operator or operand_0
-  int pick_op_1; // picked operator or operand_1 
+  size_t pick_op_0; // picked operator or operand_0 (index in PE)
+  size_t pick_op_1; // picked operator or operand_1 (index in PE)
   double _alpha; // user defined ratio
 
   // variables for calculating area and length norm
