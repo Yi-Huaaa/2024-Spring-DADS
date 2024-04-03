@@ -504,7 +504,7 @@ void FP::Simulator::_SA() {
   size_t k = 30000;
   size_t max_tried_count = k * 3;
   early_break_find_better_or_not = false;
-  double early_break_T = 900;
+  double early_break_T = 550;
   while (T > T_threshold) {
     // std::cout << "start new SA round: T = " << T << std::endl;
     size_t bad_moves = 0; // TODO: maybe use eg -10 ?
