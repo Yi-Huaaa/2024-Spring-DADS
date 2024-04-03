@@ -18,9 +18,7 @@
 // public functions
 void FP::Simulator::read(std::ifstream &input_file_1, std::ifstream &input_file_2) {
   // input file 1
-
   std::string tmp;
-  
   input_file_1 >> tmp >> _constraint_width >> _constraint_height;
   input_file_1 >> tmp >> _num_blocks;
   input_file_1 >> tmp >> _num_terminals; 
@@ -28,7 +26,7 @@ void FP::Simulator::read(std::ifstream &input_file_1, std::ifstream &input_file_
   _blocks_w_h.resize(_num_blocks);
   _terminals_w_h.resize(_num_terminals);
 
-
+  // read blocks
   for (size_t i = 0; i < _num_blocks; i++) {
     _blocks_w_h[i].resize(2);
     size_t width, height;
@@ -39,6 +37,7 @@ void FP::Simulator::read(std::ifstream &input_file_1, std::ifstream &input_file_
     _map_blk_to_id[blk_name] = i;
   }
 
+  // read terminals
   for (size_t i = 0; i < _num_terminals; i++) {
     _terminals_w_h[i].resize(2);
     size_t x, y;
@@ -46,7 +45,7 @@ void FP::Simulator::read(std::ifstream &input_file_1, std::ifstream &input_file_
     input_file_1 >> ter_name >> tmp >> x >> y;
     _terminals_w_h[i][0] = x;
     _terminals_w_h[i][1] = y;
-    _map_ter_to_id[ter_name] = i;
+    _map_ter_to_id[ter_name] = _num_blocks + i;
   }
 
   // input file 2
@@ -63,7 +62,6 @@ void FP::Simulator::read(std::ifstream &input_file_1, std::ifstream &input_file_
     }
   }
 
-
 #ifdef FP_READ_CEHCK  
   // file 1
   printf("_constraint_width = %zu, _constraint_height = %zu\n_num_blocks = %zu, _num_terminals = %zu\n", _constraint_width, _constraint_height, _num_blocks, _num_terminals);
@@ -72,40 +70,24 @@ void FP::Simulator::read(std::ifstream &input_file_1, std::ifstream &input_file_
   for (size_t i = 0; i < _num_blocks; i++) {
     printf("bk_%zu %zu %zu\n", (i+1), _blocks_w_h[i][0], _blocks_w_h[i][1]);
   } printf("\n");
-
-  // for (size_t i = 0; i < _num_terminals; i++) {
-  //   printf("terminal_%zu %zu %zu\n", i, _terminals_w_h[i][0], _terminals_w_h[i][1]);
-  // } printf("\n");
-
-  // // file 2
-  // for (size_t i = 0; i < _num_nets; i++) {
-  //   printf("Net_%zu, _net_degree = %zu:\n", i, _nets[i].size());
-  //   for (size_t j = 0; j < _nets[i].size(); j++) {
-  //     printf("%zu\n", _nets[i][j]);
-  //   }
-  // }
 #endif
 }
 
 std::vector<size_t> sort_indices(const std::vector<std::vector<size_t>>& vec, size_t key_index) {
   std::vector<size_t> indices(vec.size());
   std::iota(indices.begin(), indices.end(), 0);
-
   std::sort(indices.begin(), indices.end(), [&](size_t i, size_t j) {
     return vec[i][key_index] > vec[j][key_index];
   });
-
   return indices;
 }
 
 std::vector<size_t> sort_indices2(const std::vector<std::vector<size_t>>& vec, size_t key_index, size_t start, size_t end) {
   std::vector<size_t> indices(end-start);
-  std::iota(indices.begin()+start, indices.begin()+end, 0);
-
+  std::iota(indices.begin() + start, indices.begin() + end, 0);
   std::sort(indices.begin(), indices.end(), [&](size_t i, size_t j) {
     return vec[i][key_index] > vec[j][key_index];
   });
-
   return indices;
 }
 
@@ -510,14 +492,14 @@ void FP::Simulator::run(double alpha) {
   _init(alpha);
 
   // iteration
-  for (size_t iter = 0; iter < FP_ITERATION; iter++) {
-    _SA();
-  }
+  // for (size_t iter = 0; iter < FP_ITERATION; iter++) {
+  //   _SA();
+  // }
 }
 
 void FP::Simulator::output_results(std::ofstream &output_file) {
   output_file << _best_cost << std::endl;
-  output_file << _best_length << std::endl;
+  output_file << size_t(_best_length) << std::endl;
   output_file << _best_w * _best_h << std::endl;
   output_file << _best_w << " " << _best_h << std::endl;
   output_file << 0 << std::endl; // TODO
@@ -642,12 +624,13 @@ void FP::Simulator::_movement() {
   // // std::cout << "DEBUGGG: " << _chosen_movement << " " << pick_op_0 << " " << pick_op_1 << std::endl;
 
   // bi
+  size_t max_failures = 10;
   bool valid_movement = false;
   while (!valid_movement) {
     _chosen_movement = random(0, 3);
     if (_chosen_movement == 0) { // movement_0: swap adjacent numbers
       size_t failed_find_times = 0;
-      while (failed_find_times < 10) {
+      while (failed_find_times < max_failures) {
         pick_op_0 = random(0, PE.size() - 2);
         if (PE[pick_op_0] >= 0) { // pick a number
           pick_op_1 = pick_op_0 + 1;          
@@ -672,7 +655,8 @@ void FP::Simulator::_movement() {
         }
       }
     } else if (_chosen_movement == 2) { // movement_2: swap adjacent number and symbol but need to check
-      while (true) {
+      size_t failed_find_times = 0;
+      while (failed_find_times < max_failures) {
         pick_op_0 = random(0, PE.size() - 2);
         pick_op_1 = pick_op_0 + 1;
 
@@ -686,7 +670,8 @@ void FP::Simulator::_movement() {
             _PE_swap(pick_op_0, pick_op_1);
           }
         }
-      } 
+        failed_find_times++;
+      }
     } else if (_chosen_movement == 3) { // rotate
       do {
         pick_op_0 = random(0, PE.size() - 1);
@@ -771,6 +756,7 @@ void FP::Simulator::_print_PE() {
 }
 
 void FP::Simulator::_SA() {
+  std::cout << "HI _SA\n";
   size_t tried_count = 0;
   double T = 1000;
   double T_threshold = 0.01; // 決定要跑幾 round
@@ -931,22 +917,31 @@ std::pair<size_t, size_t> FP::Simulator::_compute_area(size_t start, size_t end,
 }
 
 double FP::Simulator::_compute_length() {
-  // TODO: consider terminals
   double total_length = 0;
-  for (const auto& blocks: _nets) {
-    double min_x = _cur_centers[0].first, max_x = min_x;
-    double min_y = _cur_centers[0].second, max_y = min_y;
-    for (size_t block_id: blocks) {
-      double cur_x = _cur_centers[block_id].first;
-      double cur_y = _cur_centers[block_id].second;
+  for (const auto& ids: _nets) { // NOTE: _nets contain block or terminal IDs
+    double min_x = 1000000000000, max_x = 0;
+    double min_y = 1000000000000, max_y = 0;
+    for (size_t id: ids) {
+      double cur_x, cur_y;
+      if (id < _num_blocks) {
+        // this ID is for a block
+        cur_x = _cur_centers[id].first;
+        cur_y = _cur_centers[id].second;
+      } else {
+        // this ID is for a terminal
+        cur_x = _terminals_w_h[id - _num_blocks][0];
+        cur_y = _terminals_w_h[id - _num_blocks][1];
+      }
       if (cur_x < min_x) {
         min_x = cur_x;
-      } else if (cur_x > max_x) {
+      }
+      if (cur_x > max_x) {
         max_x = cur_x;
       }
       if (cur_y < min_y) {
         min_y = cur_y;
-      } else if (cur_y > max_y) {
+      }
+      if (cur_y > max_y) {
         max_y = cur_y;
       }
     }
