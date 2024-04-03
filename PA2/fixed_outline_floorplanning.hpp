@@ -84,6 +84,11 @@ private:
   // debug
   void _print_PE();
   size_t _area_sum;
+
+  bool _found_in_bound;
+  double penalty_factor = 2;
+
+  void _best_fit_init();
 };
 
 } // namespace FP
