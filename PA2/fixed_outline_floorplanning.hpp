@@ -86,10 +86,10 @@ private:
   size_t _area_sum;
 
   bool _found_in_bound;
-  double penalty_factor = 2;
+  double _penalty_factor = 2;
 
   bool _best_fit_init(bool cut_same_direction);
-  bool early_break_find_better_or_not;
+  bool _early_break_find_better_or_not;
 };
 
 } // namespace FP

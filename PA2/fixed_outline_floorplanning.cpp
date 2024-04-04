@@ -495,7 +495,6 @@ void FP::Simulator::_print_PE() {
 }
 
 void FP::Simulator::_SA() {
-  // std::cout << "HI _SA\n";
   _found_in_bound = false;
   size_t tried_count = 0;
   double T = 1000;
@@ -503,11 +502,10 @@ void FP::Simulator::_SA() {
   double alpha = 0.95;
   size_t k = 30000;
   size_t max_tried_count = k * 3;
-  early_break_find_better_or_not = false;
+  _early_break_find_better_or_not = false;
   double early_break_T = 550;
   while (T > T_threshold) {
     // std::cout << "start new SA round: T = " << T << std::endl;
-    size_t bad_moves = 0; // TODO: maybe use eg -10 ?
     for (size_t i = 0; i < k; i++) {
       tried_count += 1;
       // _print_PE();
@@ -520,26 +518,18 @@ void FP::Simulator::_SA() {
 
       if (delta_cost < 0) {
         // better cost
-        // std::cout << "better cost, accept" << std::endl;
       } else {
         double rand_val = double(rand()) / RAND_MAX;
-        double prob = exp((-delta_cost)/T);
+        double prob = exp((-delta_cost) / T);
         if (T < 400.0) {
           prob /= 4;
         }
-        // printf("T = %.2lf, prob = %.3lf, -1000*delta_cost = %.2lf, -13d/T = %.2lf\n", T, prob, -1000*delta_cost, -1000*delta_cost/T);
-        // std::cout << "prob: " << prob << " " << T << std::endl;
-        // std::cout << "worse cost, prob: " << prob << std::endl;      
         if (prob > rand_val) {
           // worse cost, but accept this change
-          // std::cout << "worse cost, accept" << std::endl;
         } else {
-          // std::cout << "worse cost, reject" << std::endl;
-          bad_moves++;
           // if did not accpet the choice, need to change PE back
           // reverse all actions 
           _change_PE_back();
-          _cur_cost = prev_cost;
           _compute_cost();
         }
       }
@@ -552,9 +542,9 @@ void FP::Simulator::_SA() {
       tried_count = 0;
     } else {
       // didn't find in bound, don't decrease the temp
-      penalty_factor *= 2;
+      _penalty_factor *= 2;
     }
-    if (T < early_break_T && !early_break_find_better_or_not) {
+    if (T < early_break_T && !_early_break_find_better_or_not) {
       return;
     }
   }
@@ -579,7 +569,7 @@ void FP::Simulator::_update_best() {
     // std::cout << "block_w " << block_w << ", block_h " << block_h << "\n";
   }
   _best_PE = PE;
-  early_break_find_better_or_not = true;
+  _early_break_find_better_or_not = true;
 }
 
 void FP::Simulator::_compute_cost() {
@@ -601,14 +591,14 @@ void FP::Simulator::_compute_cost() {
   _cur_h = total_h;
 
   // add penalty if out of bounds
-  // double penalty_factor = 2; // TODO: adjust this
+  // double _penalty_factor = 2; // TODO: adjust this
   if (total_w > _constraint_width) {
-    // area += penalty_factor * (total_w - _constraint_width) * total_h;
-    length += penalty_factor * (total_w - _constraint_width);
+    // area += _penalty_factor * (total_w - _constraint_width) * total_h;
+    length += _penalty_factor * (total_w - _constraint_width);
   }
   if (total_h > _constraint_height) {
-    // area += penalty_factor * (total_h - _constraint_height) * total_w;
-    length += penalty_factor * (total_h - _constraint_height);
+    // area += _penalty_factor * (total_h - _constraint_height) * total_w;
+    length += _penalty_factor * (total_h - _constraint_height);
   }
   _cur_cost = _alpha * area / _area_norm + (1 - _alpha) * length / _length_norm;
   bool is_in_bound = total_w <= _constraint_width && total_h <= _constraint_height;
