@@ -119,12 +119,14 @@ void FP::Simulator::_init(double alpha) {
   }
 
   // try all kinds of init
+  _has_vaild_init = true;
   if (_best_fit_init(true)) {
     // std::cout << "_best_fit_init(true) success!" << std::endl;
   } else if (_best_fit_init(false)) {
     // std::cout << "_best_fit_init(false) success!" << std::endl;
   } else {
     // std::cout << "all init failed!" << std::endl;
+    _has_vaild_init = false;
   }
 
 #ifdef FP_INIT_CEHCK
@@ -366,7 +368,7 @@ void FP::Simulator::_movement() {
   size_t max_failures = 10;
   bool valid_movement = false;
   while (!valid_movement) {
-    _chosen_movement = random(0, 3);
+    _chosen_movement = _has_vaild_init ? 4 : random(0, 3);
     if (_chosen_movement == 0) { // movement_0: swap adjacent numbers
       size_t failed_find_times = 0;
       while (failed_find_times < max_failures) {
@@ -416,6 +418,15 @@ void FP::Simulator::_movement() {
         pick_op_0 = random(0, PE.size() - 1);
       } while (PE[pick_op_0] < 0);
       _PE_block_rotate(pick_op_0);
+      valid_movement = true;
+    } else if (_chosen_movement == 4) {
+      do {
+        pick_op_0 = random(0, PE.size() - 1);
+      } while (PE[pick_op_0] < 0);
+      do {
+        pick_op_1 = random(0, PE.size() - 1);
+      } while (PE[pick_op_1] < 0 || pick_op_0 == pick_op_1);
+      _PE_swap(pick_op_0, pick_op_1);
       valid_movement = true;
     }
   }
@@ -476,6 +487,10 @@ void FP::Simulator::_change_PE_back() {
     }
     case 3: {
       _PE_block_rotate(pick_op_0);
+      break;
+    }
+    case 4: {
+      _PE_swap(pick_op_0, pick_op_1);
       break;
     }
     default: {

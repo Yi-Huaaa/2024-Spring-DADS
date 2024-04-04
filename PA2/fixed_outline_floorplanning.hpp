@@ -85,6 +85,7 @@ private:
   void _print_PE();
   size_t _area_sum;
 
+  bool _has_vaild_init;
   bool _found_in_bound;
   double _penalty_factor = 2;
 
