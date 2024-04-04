@@ -22,7 +22,7 @@ class Simulator {
 public:
   void read(std::ifstream &input_file_1, std::ifstream &input_file_2);
   void run(double alpha);
-  void output_results(std::ofstream &output_file);
+  void output_results(std::ofstream &output_file, double duration);
 
 private:
   void _init(double alpha);

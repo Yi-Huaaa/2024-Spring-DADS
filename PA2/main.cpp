@@ -32,11 +32,10 @@ int main(int argc, char *argv[]) {
 auto start = std::chrono::steady_clock::now();
   simulator.read(input_file_1, input_file_2);
   simulator.run(alpha);
-  simulator.output_results(output_file); 
 auto end = std::chrono::steady_clock::now();
-
   duration = end - start;
-  std::cout << "duration: " << duration.count() * 1000 << " ms\n";
+  simulator.output_results(output_file, duration.count());
+  // std::cout << "duration: " << duration.count() * 1000 << " ms\n";
   return 0;
 }
 

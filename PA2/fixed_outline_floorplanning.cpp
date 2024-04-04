@@ -302,12 +302,12 @@ void FP::Simulator::run(double alpha) {
   }
 }
 
-void FP::Simulator::output_results(std::ofstream &output_file) {
+void FP::Simulator::output_results(std::ofstream &output_file, double duration) {
   output_file << _best_cost << std::endl;
   output_file << size_t(_best_length) << std::endl;
   output_file << _best_w * _best_h << std::endl;
   output_file << _best_w << " " << _best_h << std::endl;
-  output_file << 0 << std::endl; // TODO
+  output_file << duration << std::endl;
   for (const auto& pair: _map_blk_to_id) {
     auto& [block_name, block_id] = pair;
     output_file << pair.first << " ";
