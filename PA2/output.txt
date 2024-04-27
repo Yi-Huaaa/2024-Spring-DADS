@@ -1,0 +1,136 @@
+=================================
+running test data input_pa2/1.block input_pa2/1.nets
+######################################################################
+           input: 1
+   num of blocks: 5
+num of terminals: 3
+     num of nets: 1
+            area: 720000
+ area difference: 0.0
+            hpwl: 1000.0
+      wirelength: 1000.0
+ hpwl difference: 0.0
+      total cost: 360500.0
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
+=================================
+running test data input_pa2/2.block input_pa2/2.nets
+######################################################################
+           input: 2
+   num of blocks: 30
+num of terminals: 3
+     num of nets: 1
+            area: 720000
+ area difference: 0.0
+            hpwl: 400.0
+      wirelength: 400.0
+ hpwl difference: 0.0
+      total cost: 360200.0
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
+=================================
+running test data input_pa2/3.block input_pa2/3.nets
+######################################################################
+           input: 3
+   num of blocks: 103
+num of terminals: 3
+     num of nets: 1
+            area: 213869152
+ area difference: 0.0
+            hpwl: 700.0
+      wirelength: 700.0
+ hpwl difference: 0.0
+      total cost: 106934926.0
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
+=================================
+running test data input_pa2/ami33.block input_pa2/ami33.nets
+######################################################################
+           input: ami33
+   num of blocks: 33
+num of terminals: 40
+     num of nets: 121
+            area: 1290366
+ area difference: 0.0
+            hpwl: 84052.5
+      wirelength: 84052.0
+ hpwl difference: 1.4871657594955534e-06
+      total cost: 687209.25
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
+=================================
+running test data input_pa2/ami49.block input_pa2/ami49.nets
+######################################################################
+           input: ami49
+   num of blocks: 49
+num of terminals: 22
+     num of nets: 396
+            area: 40922448
+ area difference: 0.0
+            hpwl: 1554147.0
+      wirelength: 1554147.0
+ hpwl difference: 0.0
+      total cost: 21238297.5
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
+=================================
+running test data input_pa2/apte.block input_pa2/apte.nets
+######################################################################
+           input: apte
+   num of blocks: 9
+num of terminals: 73
+     num of nets: 96
+            area: 48736688
+ area difference: 0.0
+            hpwl: 748012.0
+      wirelength: 748012.0
+ hpwl difference: 0.0
+      total cost: 24742350.0
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
+=================================
+running test data input_pa2/hp.block input_pa2/hp.nets
+######################################################################
+           input: hp
+   num of blocks: 11
+num of terminals: 45
+     num of nets: 70
+            area: 9490320
+ area difference: 0.0
+            hpwl: 212695.0
+      wirelength: 212695.0
+ hpwl difference: 0.0
+      total cost: 4851507.5
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
+=================================
+running test data input_pa2/xerox.block input_pa2/xerox.nets
+######################################################################
+           input: xerox
+   num of blocks: 10
+num of terminals: 2
+     num of nets: 182
+            area: 20779920
+ area difference: 0.0
+            hpwl: 532203.0
+      wirelength: 532203.0
+ hpwl difference: 0.0
+      total cost: 10656061.5
+            SAME
+           LEGAL
+        IN BOUND
+######################################################################
